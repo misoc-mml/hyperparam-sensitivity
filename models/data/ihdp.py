@@ -44,6 +44,9 @@ class IHDP(object):
         test = self.split_ihdp_dataset(self.arr_test, i)
         return train, test
 
+    def get_train(self, i):
+        return self.split_ihdp_dataset(self.arr_train, i)
+
     def _get_batch(self, i, merge=False):
         if merge:
             train, test = self._get_train_test(i)

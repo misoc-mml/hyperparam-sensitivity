@@ -1,5 +1,3 @@
-# Main running script
-
 fixed_seed = 1
 import random
 import numpy as np
@@ -11,34 +9,30 @@ import time
 import logging
 import argparse
 import pandas as pd
-import matplotlib.pyplot as plt
+
+from helpers.utils import init_logger, get_dataset
 
 def get_parser():
     parser = argparse.ArgumentParser()
 
     # General
     parser.add_argument('--data_path', type=str)
+    parser.add_argument('--sf', dest='splits_file', type=str)
+    parser.add_argument('--iters', type=int, default=-1)
     parser.add_argument('-o', type=str, dest='output_path', default='./')
     parser.add_argument('--seed', type=int, default=1)
+    parser.add_argument('--scaler', type=str, choices=['minmax', 'std'], default='std')
+    parser.add_argument('--scale_y', action='store_true')
+    parser.add_argument('--sr', dest='save_results', action='store_true')
+    parser.add_argument('--sp', dest='save_preds', action='store_true')
+    parser.add_argument('--debug', action='store_true')
+
+
+    # Estimation
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'xl', 'dr', 'ipsw', 'dml'], default='sl')
+    parser.add_argument('--bm', dest='base_model', type=str, choices=['lr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='lr')
 
     return parser
-
-def init_logger(options):
-    # set up logging to file
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        filename=os.path.join(options.output_path, 'info.log'),
-                        filemode='w')
-    # define a Handler which writes INFO messages or higher to the sys.stderr
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    # set a format which is simpler for console use
-    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
 
 if __name__ == "__main__":
     parser = get_parser()
@@ -51,3 +45,13 @@ if __name__ == "__main__":
     # Initialise the logger (writes simultaneously to a file and the console).
     init_logger(options)
     logging.debug(options)
+
+    # (iters, folds, idx)
+    splits = np.load(options.splits_file, allow_pickle=True)
+    n_iters = options.iters if options.iters > 0 else splits.shape[0]
+    dataset = get_dataset('ihdp', options.data_path, n_iters)
+
+    # load main search object
+    # pass data, splits, iters and options
+    # run the search
+    # save the results (metrics, predictions)

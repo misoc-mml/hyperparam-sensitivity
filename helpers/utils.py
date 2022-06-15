@@ -5,8 +5,6 @@ import logging
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
-from ..models.data import IHDP
-
 def init_logger(options):
     # set up logging to file
     logging.basicConfig(level=logging.DEBUG,
@@ -23,14 +21,6 @@ def init_logger(options):
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
-
-def get_dataset(name, path, iters):
-    result = None
-    if name == 'ihdp':
-        result = IHDP(path, iters)
-    else:
-        raise ValueError('Unknown dataset type selected.')
-    return result
 
 def xt_from_x(x):
     xt0 = np.concatenate([x, np.zeros((x.shape[0], 1))], axis=1)

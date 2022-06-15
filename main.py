@@ -5,12 +5,12 @@ random.seed(fixed_seed)
 np.random.seed(fixed_seed)
 
 import os
-import time
 import logging
 import argparse
-import pandas as pd
 
-from helpers.utils import init_logger, get_dataset
+from helpers.utils import init_logger
+from models.estimators import SSearch
+from models.data import IHDP
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -27,12 +27,25 @@ def get_parser():
     parser.add_argument('--sp', dest='save_preds', action='store_true')
     parser.add_argument('--debug', action='store_true')
 
-
     # Estimation
     parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'xl', 'dr', 'ipsw', 'dml'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['lr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='lr')
 
     return parser
+
+def get_model(opt):
+    if opt.estimation_model == 'sl':
+        return SSearch(opt)
+    else:
+        raise ValueError("Unrecognised 'get_model' key.")
+
+def get_dataset(name, path, iters):
+    result = None
+    if name == 'ihdp':
+        result = IHDP(path, iters)
+    else:
+        raise ValueError('Unknown dataset type selected.')
+    return result
 
 if __name__ == "__main__":
     parser = get_parser()
@@ -51,7 +64,9 @@ if __name__ == "__main__":
     n_iters = options.iters if options.iters > 0 else splits.shape[0]
     dataset = get_dataset('ihdp', options.data_path, n_iters)
 
-    # load main search object
-    # pass data, splits, iters and options
-    # run the search
-    # save the results (metrics, predictions)
+    model = get_model(options)
+
+    for i in range(n_iters):
+        train, test = dataset._get_train_test(i)
+
+        model.run(train, test, splits[i], i+1)

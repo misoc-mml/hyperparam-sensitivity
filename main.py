@@ -8,7 +8,7 @@ import os
 import logging
 import argparse
 
-from helpers.utils import init_logger
+from helpers.utils import init_logger, get_scaler
 from models.estimators import SSearch
 from models.data import IHDP
 
@@ -47,6 +47,19 @@ def get_dataset(name, path, iters):
         raise ValueError('Unknown dataset type selected.')
     return result
 
+def scale_xxy(X_train, X_test, y_train, opt, cont_vars):
+    scaler_x = get_scaler(opt.scaler)
+    # Scale only continuous features.
+    X_train[:, cont_vars] = scaler_x.fit_transform(X_train[:, cont_vars])
+    X_test[:, cont_vars] = scaler_x.transform(X_test[:, cont_vars])
+
+    scaler_y = None
+    if opt.scale_y:
+        scaler_y = get_scaler(opt.scaler)
+        y_train = scaler_y.fit_transform(y_train)
+    
+    return X_train, X_test, y_train, scaler_y
+
 if __name__ == "__main__":
     parser = get_parser()
     options = parser.parse_args()
@@ -66,7 +79,30 @@ if __name__ == "__main__":
 
     model = get_model(options)
 
+    # Data iterations
     for i in range(n_iters):
         train, test = dataset._get_train_test(i)
 
-        model.run(train, test, splits[i], i+1)
+        (X_tr, t_tr, y_tr), _ = train
+        (X_test, t_test, y_test), _ = test
+
+        # CV iterations
+        for k, (train_idx, valid_idx) in enumerate(splits[i]):
+            X_tr_fold, t_tr_fold, y_tr_fold = X_tr[train_idx], t_tr[train_idx], y_tr[train_idx]
+            X_val_fold, t_val_fold, y_val_fold = X_tr[valid_idx], t_tr[valid_idx], y_tr[valid_idx]
+
+            # Scale train/val AFTER the split.
+            X_tr_fold, X_val_fold, y_tr_fold, scaler_y = scale_xxy(X_tr_fold, X_val_fold, y_tr_fold, options, dataset.contfeats)
+
+            # Fit on training set, predict on validation set.
+            model.run((X_tr_fold, t_tr_fold, y_tr_fold), (X_val_fold, t_val_fold, y_val_fold), scaler_y, options, i+1, k+1)    
+
+        # Scale train/test.
+        X_tr_scaled, X_test_scaled, y_tr_scaled, scaler_y_test = scale_xxy(X_tr, X_test, y_tr, options, dataset.contfeats)
+
+        # Fit on the *entire* training set, predict on test set.
+        model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y, options, i+1, -1)
+
+    # Save the mapping of parameter combinations and IDs.
+    params_info = model.get_params_info()
+    params_info.to_csv(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_params.csv'), index=False)

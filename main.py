@@ -101,7 +101,7 @@ if __name__ == "__main__":
         X_tr_scaled, X_test_scaled, y_tr_scaled, scaler_y_test = scale_xxy(X_tr, X_test, y_tr, options, dataset.contfeats)
 
         # Fit on the *entire* training set, predict on test set.
-        model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y, options, i+1, -1)
+        model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y_test, options, i+1, -1)
 
     # Save the mapping of parameter combinations and IDs.
     params_info = model.get_params_info()

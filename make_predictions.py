@@ -105,5 +105,4 @@ if __name__ == "__main__":
         model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y_test, options, i+1, -1)
 
     # Save the mapping of parameter combinations and IDs.
-    params_info = model.get_params_info()
-    params_info.to_csv(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_params.csv'), index=False)
+    model.save_params_info()

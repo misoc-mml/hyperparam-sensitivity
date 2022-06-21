@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 
-from ._common import get_params, get_regressor
+from ._common import get_params, get_regressor, get_params_df
 from helpers.data import xt_from_x
 
 class SSearch():
@@ -51,27 +51,7 @@ class SSearch():
 
             pd.DataFrame(results, columns=cols).to_csv(os.path.join(opt.output_path, filename), index=False)
 
-    
-    def get_params_info(self):
-        # ParameterGrid is deterministic, so we can safely do this.
-        # First, determine if all combinations have the same number of params.
-        equal_len = True
-        row_len = -1
-        for params in ParameterGrid(self.params_grid):
-            if row_len < 0:
-                row_len = len(params)
-            
-            if len(params) != row_len:
-                equal_len = False
-                break
+    def save_params_info(self):
+        df_params = get_params_df(self.params_grid)
 
-        param_list = list(ParameterGrid(self.params_grid))
-
-        if equal_len:
-            df_params = pd.DataFrame.from_records(param_list)
-        else:
-            df_params = pd.DataFrame(param_list, columns=['params'])
-
-        df_params.insert(0, 'id', range(1, len(df_params) + 1))
-
-        return df_params
+        df_params.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'), index=False)

@@ -8,7 +8,8 @@ import os
 import logging
 import argparse
 
-from helpers.utils import init_logger, get_scaler
+from helpers.utils import init_logger
+from helpers.data import get_scaler
 from models.estimators import SSearch
 from models.data import IHDP
 

@@ -1,7 +1,9 @@
+# Metrics related helper functions.
+
 import numpy as np
 
 from models.data import Evaluator
-from helpers.utils import get_scaler
+from utils import get_scaler
 
 def mse(a, b):
     return np.mean((a - b)**2)

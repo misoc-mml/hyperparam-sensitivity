@@ -4,9 +4,9 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from helpers.utils import init_logger
 from models.data import IHDP
-from analysis.utils import get_metrics
+from helpers.utils import init_logger
+from helpers.metrics import get_metrics
 
 def get_parser():
     parser = argparse.ArgumentParser()

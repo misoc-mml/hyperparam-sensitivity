@@ -5,7 +5,7 @@ from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 
 from ._common import get_params, get_regressor
-from helpers.utils import xt_from_x
+from helpers.data import xt_from_x
 
 class SSearch():
     def __init__(self, opt):

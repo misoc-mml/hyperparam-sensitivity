@@ -96,13 +96,13 @@ if __name__ == "__main__":
             X_tr_fold, X_val_fold, y_tr_fold, scaler_y = scale_xxy(X_tr_fold, X_val_fold, y_tr_fold, options, dataset.contfeats)
 
             # Fit on training set, predict on validation set.
-            model.run((X_tr_fold, t_tr_fold, y_tr_fold), (X_val_fold, t_val_fold, y_val_fold), scaler_y, options, i+1, k+1)    
+            model.run((X_tr_fold, t_tr_fold, y_tr_fold), (X_val_fold, t_val_fold, y_val_fold), scaler_y, i+1, k+1)    
 
         # Scale train/test.
         X_tr_scaled, X_test_scaled, y_tr_scaled, scaler_y_test = scale_xxy(X_tr, X_test, y_tr, options, dataset.contfeats)
 
         # Fit on the *entire* training set, predict on test set.
-        model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y_test, options, i+1, -1)
+        model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y_test, i+1, -1)
 
     # Save the mapping of parameter combinations and IDs.
     model.save_params_info()

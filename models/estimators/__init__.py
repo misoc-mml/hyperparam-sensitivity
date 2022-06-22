@@ -1,1 +1,1 @@
-from ._slearner import SSearch
+from ._slearner import SSearch, SEvaluator

@@ -5,7 +5,8 @@ from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 
 from ._common import get_params, get_regressor, get_params_df
-from helpers.data import xt_from_x
+from helpers.data import xt_from_x, get_scaler
+from helpers.metrics import mse, pehe, abs_ate
 
 class SSearch():
     def __init__(self, opt):
@@ -13,7 +14,7 @@ class SSearch():
         self.model = get_regressor(self.opt.base_model)
         self.params_grid = get_params(self.opt.base_model)
     
-    def run(self, train, test, scaler, opt, iter_id, fold_id):
+    def run(self, train, test, scaler, iter_id, fold_id):
         X_tr = train[0]
         t_tr = train[1].flatten()
         y_tr = train[2].flatten()
@@ -35,7 +36,7 @@ class SSearch():
             y0_hat = model1.predict(xt0)
             y1_hat = model1.predict(xt1)
 
-            if opt.scale_y:
+            if self.opt.scale_y:
                 y0_hat = scaler.inverse_transform(y0_hat)
                 y1_hat = scaler.inverse_transform(y1_hat)
             
@@ -45,13 +46,51 @@ class SSearch():
             results = np.concatenate([y_hat.reshape(-1, 1), y0_hat.reshape(-1, 1), y1_hat.reshape(-1, 1), cate_hat.reshape(-1, 1)], axis=1)
 
             if fold_id > 0:
-                filename = f'{opt.estimation_model}_{opt.base_model}_iter{iter_id}_fold{fold_id}_param{param_id+1}.csv'
+                filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}_param{param_id+1}.csv'
             else:
-                filename = f'{opt.estimation_model}_{opt.base_model}_iter{iter_id}_param{param_id+1}.csv'
+                filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_param{param_id+1}.csv'
 
-            pd.DataFrame(results, columns=cols).to_csv(os.path.join(opt.output_path, filename), index=False)
+            pd.DataFrame(results, columns=cols).to_csv(os.path.join(self.opt.output_path, filename), index=False)
 
     def save_params_info(self):
         df_params = get_params_df(self.params_grid)
 
         df_params.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'), index=False)
+
+class SEvaluator():
+    def __init__(self, opt):
+        self.opt = opt
+        self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
+    
+    def run(self, iter_id, fold_id, y_tr, y_test, cate_test):
+        if self.opt.scale_y:
+            # Replicate the scaler
+            scaler = get_scaler(self.opt.scaler)
+            scaler.fit(y_tr)
+            y_test_scaled = scaler.transform(y_test)
+        else:
+            y_test_scaled = y_test
+
+        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe']
+        preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        if fold_id > 0:
+            preds_filename_base += f'_fold{fold_id}'
+            results_cols.insert(1, 'fold_id')
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
+            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
+
+            cate_hat = df_preds['cate_hat'].to_numpy()
+
+            test_mse = mse(df_preds['y_hat'].to_numpy(), y_test_scaled)
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            result = [iter_id, p_id, test_mse, test_ate, test_pehe]
+            if fold_id > 0: result.insert(1, fold_id)
+
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)

@@ -13,7 +13,7 @@ class TSearch():
         self.params0 = get_params(opt.base_model)
         self.params1 = get_params(opt.base_model)
     
-    def run(self, train, test, scaler, opt, iter_id, fold_id):
+    def run(self, train, test, scaler, iter_id, fold_id):
         X_tr = train[0]
         t_tr = train[1].flatten()
         y_tr = train[2].flatten()
@@ -43,7 +43,7 @@ class TSearch():
             # For CATE prediction purposes (predict ALL X).
             y0_hat_cate = m0.predict(X_test)
 
-            if opt.scale_y:
+            if self.opt.scale_y:
                 y0_hat_cate = scaler.inverse_transform(y0_hat_cate)
 
             y0_hat_cates.append(y0_hat_cate)
@@ -63,7 +63,7 @@ class TSearch():
             # For CATE prediction purposes (predict ALL X).
             y1_hat_cate = m1.predict(X_test)
 
-            if opt.scale_y:
+            if self.opt.scale_y:
                 y1_hat_cate = scaler.inverse_transform(y1_hat_cate)
 
             y1_hat_cates.append(y1_hat_cate)

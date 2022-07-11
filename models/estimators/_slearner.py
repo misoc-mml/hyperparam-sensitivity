@@ -62,7 +62,7 @@ class SEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
     
-    def run(self, iter_id, fold_id, y_tr, y_test, cate_test):
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)

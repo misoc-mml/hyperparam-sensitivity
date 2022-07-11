@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from models.data import IHDP
-from models.estimators import SEvaluator
+from models.estimators import SEvaluator, TEvaluator
 from helpers.utils import init_logger
 
 def get_parser():
@@ -29,6 +29,8 @@ def get_parser():
 def get_evaluator(opt):
     if opt.estimation_model == 'sl':
         return SEvaluator(opt)
+    elif opt.estimation_model == 'tl':
+        return TEvaluator(opt)
     else:
         raise ValueError("Unrecognised 'get_evaluator' key.")
 
@@ -75,16 +77,17 @@ if __name__ == "__main__":
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
             y_tr_fold = y_tr[train_idx]
+            t_val_fold = t_tr[valid_idx]
             y_val_fold = y_tr[valid_idx]
             cate_val_fold = mu1_tr[valid_idx] - mu0_tr[valid_idx]
 
             # *** CV metrics ***
-            df_fold = evaluator.run(i+1, k+1, y_tr_fold, y_val_fold, cate_val_fold)
+            df_fold = evaluator.run(i+1, k+1, y_tr_fold, t_val_fold, y_val_fold, cate_val_fold)
             df_val = pd.concat([df_val, df_fold], ignore_index=True)
             # ***
 
         # *** Test set metrics ***
-        df_iter = evaluator.run(i+1, -1, y_tr, y_test, cate_test)
+        df_iter = evaluator.run(i+1, -1, y_tr, t_test, y_test, cate_test)
         df_test = pd.concat([df_test, df_iter], ignore_index=True)
         # ***
 

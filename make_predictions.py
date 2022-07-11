@@ -10,7 +10,7 @@ import argparse
 
 from helpers.utils import init_logger
 from helpers.data import get_scaler
-from models.estimators import SSearch
+from models.estimators import SSearch, TSearch
 from models.data import IHDP
 
 def get_parser():
@@ -37,6 +37,8 @@ def get_parser():
 def get_model(opt):
     if opt.estimation_model == 'sl':
         return SSearch(opt)
+    elif opt.estimation_model == 'tl':
+        return TSearch(opt)
     else:
         raise ValueError("Unrecognised 'get_model' key.")
 

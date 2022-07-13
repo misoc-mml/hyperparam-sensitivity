@@ -128,4 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+results/*/*.zip
 results/*/*/
+scripts/catboost_info

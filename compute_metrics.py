@@ -21,8 +21,8 @@ def get_parser():
     parser.add_argument('--scale_y', action='store_true')
 
     # Estimation
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'xl', 'dr', 'ipsw', 'dml'], default='sl')
-    parser.add_argument('--bm', dest='base_model', type=str, choices=['lr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='lr')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl'], default='sl')
+    parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='lr')
 
     return parser
 

@@ -41,3 +41,18 @@ def get_risk(df):
     pehe_risk = [f'{pehe_risk_mean:.3f} +/- {pehe_risk_std:.3f}']
 
     return ate_risk, pehe_risk
+
+def get_achieved_best(df):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+    best_mse_iter = iter_gr.apply(lambda x: x.loc[x['mse_val'].idxmin(), ['ate_test', 'pehe_test']])
+    best_ate_iter = iter_gr.apply(lambda x: x.loc[x['ate_test'].idxmin(), ['ate_test']])
+    best_pehe_iter = iter_gr.apply(lambda x: x.loc[x['pehe_test'].idxmin(), ['pehe_test']])
+
+    d = {'ate_on_mse': best_mse_iter['ate_test'], 'ate_best': best_ate_iter['ate_test'],
+        'pehe_on_mse': best_mse_iter['pehe_test'], 'pehe_best': best_pehe_iter['pehe_test']}
+    df = pd.DataFrame(data=d)
+
+    d_mean = np.mean(df[['ate_on_mse', 'ate_best', 'pehe_on_mse', 'pehe_best']], axis=0)
+    d_std = np.std(df[['ate_on_mse', 'ate_best', 'pehe_on_mse', 'pehe_best']], axis=0)
+
+    return _merge_scores(d_mean, d_std)

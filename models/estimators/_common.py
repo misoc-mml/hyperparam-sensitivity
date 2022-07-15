@@ -39,11 +39,11 @@ def get_params(name):
 
 def get_regressor(name, seed=1):
     if name == 'l1':
-        return LassoLars(fit_intercept=False, random_state=seed)
+        return LassoLars(normalize=False, random_state=seed)
     elif name == 'l2':
-        return Ridge(fit_intercept=False, random_state=seed)
+        return Ridge(normalize=False, random_state=seed)
     elif name == 'tr':
-        return Pipeline([('feat', PolynomialFeatures()), ('clf', TweedieRegressor(fit_intercept=False))])
+        return Pipeline([('feat', PolynomialFeatures()), ('clf', TweedieRegressor())])
     elif name == 'dt':
         return DecisionTreeRegressor()
     elif name == 'rf':

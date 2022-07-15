@@ -4,12 +4,16 @@ import pandas as pd
 def _merge_scores(scores1, scores2):
     return [f'{s1:.3f} +/- {s2:.3f}' for s1, s2 in zip(scores1, scores2)]
 
-def load_merge(path, method):
+def load_merge(path, method, cols=['mse']):
     val_scores = pd.read_csv(f'{path}/{method}/{method}_val_metrics.csv')
     test_scores = pd.read_csv(f'{path}/{method}/{method}_test_metrics.csv')
 
     gr = val_scores.groupby(['iter_id', 'param_id'], as_index=False).mean()
     gr = gr.drop(columns=['fold_id'])
+
+    if len(cols) > 1:
+        gr['mse'] = gr[cols].mean(axis=1)
+        test_scores['mse'] = test_scores[cols].mean(axis=1)
 
     return gr.merge(test_scores, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 

@@ -71,7 +71,7 @@ class SEvaluator():
         else:
             y_test_scaled = y_test
 
-        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe']
+        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat']
         preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
         if fold_id > 0:
             preds_filename_base += f'_fold{fold_id}'
@@ -83,12 +83,13 @@ class SEvaluator():
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
             cate_hat = df_preds['cate_hat'].to_numpy()
+            ate_hat = np.mean(cate_hat)
 
             test_mse = mse(df_preds['y_hat'].to_numpy(), y_test_scaled)
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)
 
-            result = [iter_id, p_id, test_mse, test_ate, test_pehe]
+            result = [iter_id, p_id, test_mse, test_ate, test_pehe, ate_hat]
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)

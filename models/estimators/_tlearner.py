@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
@@ -128,7 +129,7 @@ class TEvaluator():
         y0_test = y_test_scaled[t_test < 1]
         y1_test = y_test_scaled[t_test > 0]
 
-        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe']
+        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe', 'ate_hat']
         preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
         preds_m1_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m1_iter{iter_id}'
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}'
@@ -157,11 +158,12 @@ class TEvaluator():
             df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
 
             cate_hat = df_cate['cate_hat'].to_numpy()
+            ate_hat = np.mean(cate_hat)
 
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)
 
-            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id], test_ate, test_pehe]
+            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id], test_ate, test_pehe, ate_hat]
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)

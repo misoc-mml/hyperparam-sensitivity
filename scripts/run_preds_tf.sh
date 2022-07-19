@@ -1,5 +1,5 @@
 ITERS=10
-# Options: sl, tl
+# Options: [sl, tl, two-head]
 MODEL="sl"
 BASE_MODEL="mlp"
 

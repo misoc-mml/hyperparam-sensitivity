@@ -2,6 +2,9 @@
 
 import os
 import logging
+import pandas as pd
+
+from sklearn.model_selection import ParameterGrid
 
 def init_logger(options):
     # set up logging to file
@@ -20,3 +23,22 @@ def init_logger(options):
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
+def get_params_df(params):
+    # ParameterGrid is deterministic, so we can safely do this.
+    # First, determine if all combinations have the same number of params.
+    param_list = list(ParameterGrid(params))
+    equal_len = True
+    row_len = len(param_list[0])
+    for params in ParameterGrid(params):
+        if len(params) != row_len:
+            equal_len = False
+            break
+
+    if equal_len:
+        df_params = pd.DataFrame.from_records(param_list)
+    else:
+        df_params = pd.DataFrame(param_list, columns=['params'])
+
+    df_params.insert(0, 'id', range(1, len(df_params) + 1))
+
+    return df_params

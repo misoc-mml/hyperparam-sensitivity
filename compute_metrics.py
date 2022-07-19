@@ -22,7 +22,7 @@ def get_parser():
 
     # Estimation
     parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl'], default='sl')
-    parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='lr')
+    parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='lr')
 
     return parser
 

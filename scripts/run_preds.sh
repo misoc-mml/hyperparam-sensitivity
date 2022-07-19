@@ -1,7 +1,7 @@
 ITERS=10
 # Options: sl, tl
 MODEL="sl"
-BASE_MODELS=("l1" "l2" "tr" "dt" "rf" "et" "kr" "cb" "lgbm")
+BASE_MODELS=("l1" "l2" "dt" "rf" "et" "kr" "cb" "lgbm")
 
 for BASE_MODEL in ${BASE_MODELS[@]}
 do

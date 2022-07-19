@@ -4,9 +4,10 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 
-from ._common import get_params, get_regressor, get_params_df
+from ._common import get_params, get_regressor
 from helpers.data import xt_from_x, get_scaler
 from helpers.metrics import mse, pehe, abs_ate
+from helpers.utils import get_params_df
 
 class SSearch():
     def __init__(self, opt):

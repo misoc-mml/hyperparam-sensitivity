@@ -42,3 +42,9 @@ def get_params_df(params):
     df_params.insert(0, 'id', range(1, len(df_params) + 1))
 
     return df_params
+
+def get_model_name(opt):
+    if opt.estimation_model == 'two-head':
+        return opt.estimation_model
+    else:
+        return f'{opt.estimation_model}_{opt.base_model}'

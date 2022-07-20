@@ -6,7 +6,7 @@ import pandas as pd
 
 from models.data import IHDP
 from models.estimators import SEvaluator, TEvaluator
-from helpers.utils import init_logger
+from helpers.utils import init_logger, get_model_name
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -21,13 +21,13 @@ def get_parser():
     parser.add_argument('--scale_y', action='store_true')
 
     # Estimation
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'two-head'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='lr')
 
     return parser
 
 def get_evaluator(opt):
-    if opt.estimation_model == 'sl':
+    if opt.estimation_model in ('sl', 'two-head'):
         return SEvaluator(opt)
     elif opt.estimation_model == 'tl':
         return TEvaluator(opt)
@@ -91,6 +91,6 @@ if __name__ == "__main__":
         df_test = pd.concat([df_test, df_iter], ignore_index=True)
         # ***
 
-    df_val.to_csv(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_val_metrics.csv'), index=False)
-
-    df_test.to_csv(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_test_metrics.csv'), index=False)
+    model_name = get_model_name(options)
+    df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)
+    df_test.to_csv(os.path.join(options.output_path, f'{model_name}_test_metrics.csv'), index=False)

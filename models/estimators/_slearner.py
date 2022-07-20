@@ -7,7 +7,7 @@ from sklearn.model_selection import ParameterGrid
 from ._common import get_params, get_regressor
 from helpers.data import xt_from_x, get_scaler
 from helpers.metrics import mse, pehe, abs_ate
-from helpers.utils import get_params_df
+from helpers.utils import get_params_df, get_model_name
 
 class SSearch():
     def __init__(self, opt):
@@ -61,7 +61,8 @@ class SSearch():
 class SEvaluator():
     def __init__(self, opt):
         self.opt = opt
-        self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
+        self.model_name = get_model_name(opt)
+        self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.model_name}_params.csv'))
     
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
         results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat']
@@ -75,7 +76,7 @@ class SEvaluator():
         else:
             y_test_scaled = y_test
 
-        preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        preds_filename_base = f'{self.model_name}_iter{iter_id}'
         if fold_id > 0:
             preds_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')

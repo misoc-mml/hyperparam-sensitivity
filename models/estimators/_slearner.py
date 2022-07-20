@@ -64,15 +64,17 @@ class SEvaluator():
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
     
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
+        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat']
+        
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
             scaler.fit(y_tr)
             y_test_scaled = scaler.transform(y_test)
+            results_cols.insert(3, 'mse_inv')
         else:
             y_test_scaled = y_test
 
-        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat']
         preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
         if fold_id > 0:
             preds_filename_base += f'_fold{fold_id}'
@@ -86,11 +88,21 @@ class SEvaluator():
             cate_hat = df_preds['cate_hat'].to_numpy()
             ate_hat = np.mean(cate_hat)
 
-            test_mse = mse(df_preds['y_hat'].to_numpy(), y_test_scaled)
+            # Scaled MSE (y_hat is scaled).
+            y_hat = df_preds['y_hat'].to_numpy()
+            test_mse = mse(y_hat, y_test_scaled)
+
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)
 
             result = [iter_id, p_id, test_mse, test_ate, test_pehe, ate_hat]
+
+            if self.opt.scale_y:
+                y_hat_inv = scaler.inverse_transform(y_hat)
+                # Unscaled MSE.
+                test_mse_inv = mse(y_hat_inv, y_test)
+                result.insert(3, test_mse_inv)
+
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)

@@ -32,6 +32,9 @@ def get_params(name):
         return {"depth": list(np.arange(5, 11)), "l2_leaf_reg": [1, 3, 10, 100]}
     elif name == 'lgbm':
         return {"max_depth": list(np.arange(5, 11)), "reg_lambda": [0.1, 0, 1, 5, 10]}
+    elif name == 'cf':
+        return {'max_depth': list(np.arange(2, 10)) + [10, 15, 20],
+                'min_samples_leaf': list(np.arange(1, 10)) + list(np.arange(0.01, 0.06, 0.01))}
     else:
         raise ValueError("Unrecognised 'get_params' key.")
 

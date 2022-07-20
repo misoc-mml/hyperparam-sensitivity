@@ -44,7 +44,7 @@ def get_params_df(params):
     return df_params
 
 def get_model_name(opt):
-    if opt.estimation_model == 'two-head':
+    if opt.estimation_model in ('two-head', 'cf'):
         return opt.estimation_model
     else:
         return f'{opt.estimation_model}_{opt.base_model}'

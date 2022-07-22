@@ -85,6 +85,9 @@ if __name__ == "__main__":
 
     model = get_model(options)
 
+    # Save the mapping of parameter combinations and IDs.
+    model.save_params_info()
+
     # Data iterations
     for i in range(n_iters):
         train, test = dataset._get_train_test(i)
@@ -108,6 +111,3 @@ if __name__ == "__main__":
 
         # Fit on the *entire* training set, predict on test set.
         model.run((X_tr_scaled, t_tr, y_tr_scaled), (X_test_scaled, t_test, y_test), scaler_y_test, i+1, -1)
-
-    # Save the mapping of parameter combinations and IDs.
-    model.save_params_info()

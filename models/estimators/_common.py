@@ -1,13 +1,28 @@
 import numpy as np
 
-from sklearn.linear_model import Ridge, LassoLars, TweedieRegressor
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor
+from sklearn.linear_model import Ridge, LassoLars, TweedieRegressor, RidgeClassifier
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, RandomForestClassifier, ExtraTreesClassifier
 from sklearn.kernel_ridge import KernelRidge
-from catboost import CatBoostRegressor
-from lightgbm import LGBMRegressor
+from catboost import CatBoostRegressor, CatBoostClassifier
+from lightgbm import LGBMRegressor, LGBMClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
+
+class RidgeClassifier(Ridge):
+    def predict_proba(self, X):
+        p = self.predict(X).reshape(-1, 1)
+        return np.concatenate([1 - p, p], axis=1)
+
+class LassoLarsClassifier(LassoLars):
+    def predict_proba(self, X):
+        p = self.predict(X).reshape(-1, 1)
+        return np.concatenate([1 - p, p], axis=1)
+
+class KernelRidgeClassifier(KernelRidge):
+    def predict_proba(self, X):
+        p = self.predict(X).reshape(-1, 1)
+        return np.concatenate([1 - p, p], axis=1)
 
 def get_params(name):
     if name == 'l1':
@@ -59,3 +74,25 @@ def get_regressor(name, seed=1):
         return LGBMRegressor(n_estimators=1000, random_state=seed, n_jobs=-1)
     else:
         raise ValueError("Unrecognised 'get_regressor' key.")
+
+def get_classifier(name, seed=1):
+    if name == 'l1':
+        return LassoLarsClassifier(normalize=False, random_state=seed)
+    elif name == 'l2':
+        return RidgeClassifier(normalize=False, random_state=seed)
+    elif name == 'tr':
+        return None
+    elif name == 'dt':
+        return DecisionTreeClassifier()
+    elif name == 'rf':
+        return RandomForestClassifier(n_estimators=1000, n_jobs=-1, random_state=seed)
+    elif name == 'et':
+        return ExtraTreesClassifier(n_estimators=1000, n_jobs=-1, random_state=seed)
+    elif name == 'kr':
+        return KernelRidgeClassifier()
+    elif name == 'cb':
+        return CatBoostClassifier(iterations=1000, random_state=seed, verbose=False, thread_count=-1)
+    elif name == 'lgbm':
+        return LGBMClassifier(n_estimators=1000, random_state=seed, n_jobs=-1)
+    else:
+        raise ValueError("Unrecognised 'get_classifier' key.")

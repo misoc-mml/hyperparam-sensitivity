@@ -21,7 +21,7 @@ class SPlugin(PluginLearner):
     def run(self, X, t, y):
         reg = get_regressor(self.opt.base_model, self.opt.seed)
         params = get_params(self.opt.base_model)
-        grid = GridSearchCV(reg, params, n_jobs=-1, cv=self.opt.cv)
+        grid = GridSearchCV(reg, params, n_jobs=self.opt.n_jobs, cv=self.opt.cv)
         grid.fit(np.concatenate([X, t.reshape(-1, 1)], axis=1), y)
         best_params = grid.best_params_
 
@@ -32,7 +32,7 @@ class SPlugin(PluginLearner):
         reg_clean = get_regressor(self.opt.base_model, self.opt.seed)
         reg_clean.set_params(**best_params)
 
-        parallel = Parallel(-1)
+        parallel = Parallel(self.opt.n_jobs)
         predictions = parallel(
             delayed(_fit_and_predict)(
                 SLearner(reg_clean), X, t, y, train, test
@@ -48,8 +48,8 @@ class SPlugin(PluginLearner):
 
 class TPlugin(PluginLearner):
     def run(self, X, t, y):
-        m0_grid = GridSearchCV(get_regressor(self.opt.base_model, self.opt.seed), get_params(self.opt.base_model), n_jobs=-1, cv=self.opt.cv)
-        m1_grid = GridSearchCV(get_regressor(self.opt.base_model, self.opt.seed), get_params(self.opt.base_model), n_jobs=-1, cv=self.opt.cv)
+        m0_grid = GridSearchCV(get_regressor(self.opt.base_model, self.opt.seed), get_params(self.opt.base_model), n_jobs=self.opt.n_jobs, cv=self.opt.cv)
+        m1_grid = GridSearchCV(get_regressor(self.opt.base_model, self.opt.seed), get_params(self.opt.base_model), n_jobs=self.opt.n_jobs, cv=self.opt.cv)
         tl_grid = TLearner(models=[m0_grid, m1_grid])
         tl_grid.fit(y, t, X=X)
         best_params = [m.best_params_ for m in tl_grid.models]
@@ -64,7 +64,7 @@ class TPlugin(PluginLearner):
         splits = list(cv.split(X, t))
         test_indices = np.concatenate([test for _, test in splits])
 
-        parallel = Parallel(-1)
+        parallel = Parallel(self.opt.n_jobs)
         predictions = parallel(
             delayed(_fit_and_predict)(
                 TLearner(models=mx_clean), X, t, y, train, test

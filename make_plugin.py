@@ -85,11 +85,11 @@ if __name__ == "__main__":
 
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
-            X_tr_fold, = X_tr[train_idx]
+            X_tr_fold = X_tr[train_idx]
             X_val_fold, t_val_fold, y_val_fold = X_tr[valid_idx], t_tr[valid_idx], y_tr[valid_idx]
 
             # Scale train/val AFTER the split.
-            X_tr_fold, X_val_fold, y_tr_fold, scaler_y = scale_x(X_tr_fold, X_val_fold, options, dataset.contfeats)
+            X_tr_fold, X_val_fold = scale_x(X_tr_fold, X_val_fold, options, dataset.contfeats)
 
             cate_preds = model.run(X_val_fold, t_val_fold, y_val_fold)
 

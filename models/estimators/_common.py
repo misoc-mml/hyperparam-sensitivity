@@ -53,7 +53,7 @@ def get_params(name):
     else:
         raise ValueError("Unrecognised 'get_params' key.")
 
-def get_regressor(name, seed=1):
+def get_regressor(name, seed=1, n_jobs=-1):
     if name == 'l1':
         return LassoLars(normalize=False, random_state=seed)
     elif name == 'l2':
@@ -63,19 +63,19 @@ def get_regressor(name, seed=1):
     elif name == 'dt':
         return DecisionTreeRegressor()
     elif name == 'rf':
-        return RandomForestRegressor(n_estimators=1000, n_jobs=-1, random_state=seed)
+        return RandomForestRegressor(n_estimators=1000, n_jobs=n_jobs, random_state=seed)
     elif name == 'et':
-        return ExtraTreesRegressor(n_estimators=1000, n_jobs=-1, random_state=seed)
+        return ExtraTreesRegressor(n_estimators=1000, n_jobs=n_jobs, random_state=seed)
     elif name == 'kr':
         return KernelRidge()
     elif name == 'cb':
-        return CatBoostRegressor(iterations=1000, random_state=seed, verbose=False, thread_count=-1)
+        return CatBoostRegressor(iterations=1000, random_state=seed, verbose=False, thread_count=n_jobs)
     elif name == 'lgbm':
-        return LGBMRegressor(n_estimators=1000, random_state=seed, n_jobs=-1)
+        return LGBMRegressor(n_estimators=1000, random_state=seed, n_jobs=n_jobs)
     else:
         raise ValueError("Unrecognised 'get_regressor' key.")
 
-def get_classifier(name, seed=1):
+def get_classifier(name, seed=1, n_jobs=-1):
     if name == 'l1':
         return LassoLarsClassifier(normalize=False, random_state=seed)
     elif name == 'l2':
@@ -85,14 +85,14 @@ def get_classifier(name, seed=1):
     elif name == 'dt':
         return DecisionTreeClassifier()
     elif name == 'rf':
-        return RandomForestClassifier(n_estimators=1000, n_jobs=-1, random_state=seed)
+        return RandomForestClassifier(n_estimators=1000, n_jobs=n_jobs, random_state=seed)
     elif name == 'et':
-        return ExtraTreesClassifier(n_estimators=1000, n_jobs=-1, random_state=seed)
+        return ExtraTreesClassifier(n_estimators=1000, n_jobs=n_jobs, random_state=seed)
     elif name == 'kr':
         return KernelRidgeClassifier()
     elif name == 'cb':
-        return CatBoostClassifier(iterations=1000, random_state=seed, verbose=False, thread_count=-1)
+        return CatBoostClassifier(iterations=1000, random_state=seed, verbose=False, thread_count=n_jobs)
     elif name == 'lgbm':
-        return LGBMClassifier(n_estimators=1000, random_state=seed, n_jobs=-1)
+        return LGBMClassifier(n_estimators=1000, random_state=seed, n_jobs=n_jobs)
     else:
         raise ValueError("Unrecognised 'get_classifier' key.")

@@ -31,15 +31,12 @@ class MLP():
             loss = keras.losses.MeanSquaredError()
 
         input = layers.Input(shape=(self.input_size,))
-        x = layers.Dense(self.n_units, activation='linear')(input)
-
+        x = layers.Dense(self.n_units, activation=self.activation)(input)
         if self.dropout > 0.0: x = layers.Dropout(self.dropout)(x)
-        x = layers.Activation(self.activation)(x)
 
         for _ in range(self.n_layers - 1):
-            x = layers.Dense(self.n_units, activation='linear')(x)
+            x = layers.Dense(self.n_units, activation=self.activation)(x)
             if self.dropout > 0.0: x = layers.Dropout(self.dropout)(x)
-            x = layers.Activation(self.activation)(x)
 
         kernel_reg = keras.regularizers.l2(self.l2) if self.l2 > 0.0 else None
         x = layers.Dense(1, activation=out_act, kernel_regularizer=kernel_reg)(x)

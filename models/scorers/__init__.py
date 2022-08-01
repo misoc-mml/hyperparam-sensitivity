@@ -1,1 +1,1 @@
-from ._plugin import SPlugin, TPlugin
+from ._plugin import SPlugin, TPlugin, PluginScorer

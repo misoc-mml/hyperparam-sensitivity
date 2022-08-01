@@ -117,6 +117,25 @@ class TEvaluator():
         self.df_m1_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'))
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
     
+    def score_cate(self, iter_id, fold_id, cate_test):
+        results_cols = ['iter_id', 'fold_id', 'param_id' 'ate', 'pehe']
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}_fold{fold_id}'
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
+            df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
+
+            cate_hat = df_cate['cate_hat'].to_numpy()
+
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            result = [iter_id, fold_id, p_id, test_ate, test_pehe]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
+
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
         if self.opt.scale_y:
             # Replicate the scaler

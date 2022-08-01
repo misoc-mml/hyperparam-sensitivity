@@ -14,7 +14,7 @@ class CausalForestSearch():
         self.opt = opt
         self.model = CausalForest(n_estimators=1000, random_state=opt.seed)
         self.params_grid = get_params(opt.estimation_model)
-    
+
     def run(self, train, test, scaler, iter_id, fold_id):
         X_tr = train[0]
         t_tr = train[1].flatten()
@@ -44,6 +44,25 @@ class CausalForestEvaluator():
     def __init__(self, opt):
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_params.csv'))
+
+    def score_cate(self, iter_id, fold_id, cate_test):
+        results_cols = ['iter_id', 'fold_id', 'param_id' 'ate', 'pehe']
+        preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
+            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
+
+            cate_hat = df_preds['cate_hat'].to_numpy()
+
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            result = [iter_id, fold_id, p_id, test_ate, test_pehe]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
         results_cols = ['iter_id', 'param_id', 'ate', 'pehe', 'ate_hat']

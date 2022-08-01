@@ -1,4 +1,6 @@
+import os
 import numpy as np
+import pandas as pd
 
 from econml.metalearners import SLearner, TLearner
 from models.estimators._common import get_params, get_regressor
@@ -83,3 +85,7 @@ class TPlugin(PluginLearner):
 class PluginScorer():
     def __init__(self, opt):
         self.opt = opt
+    
+    def get_cate(self, iter, fold):
+        df = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}.csv'))
+        return df['cate_hat'].to_numpy()

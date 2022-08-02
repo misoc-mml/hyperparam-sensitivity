@@ -65,7 +65,7 @@ class SEvaluator():
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.model_name}_params.csv'))
     
     def score_cate(self, iter_id, fold_id, cate_test):
-        results_cols = ['iter_id', 'fold_id', 'param_id' 'ate', 'pehe']
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
         preds_filename_base = f'{self.model_name}_iter{iter_id}_fold{fold_id}'
 
         test_results = []

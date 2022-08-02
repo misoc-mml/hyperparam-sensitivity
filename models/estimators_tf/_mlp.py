@@ -4,7 +4,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 
 class MLP():
-    def __init__(self, input_size, n_layers, n_units, learning_rate, activation, dropout, l2, out_layer, batch_size, epochs):
+    def __init__(self, input_size, n_layers, n_units, learning_rate, activation, dropout, l2, out_layer, batch_size, epochs, epochs_are_steps=False):
         self.input_size = input_size
         self.n_layers = n_layers
         self.n_units = n_units
@@ -15,6 +15,7 @@ class MLP():
         self.out_layer = out_layer
         self.batch_size = batch_size
         self.epochs = epochs
+        self.epochs_are_steps = epochs_are_steps
 
         self.graph = tf.Graph()
         with self.graph.as_default():
@@ -49,9 +50,20 @@ class MLP():
     
     def fit(self, X, y):
         bs = self.batch_size if self.batch_size > 0 else len(X)
-        with self.graph.as_default():
-            with self.sess.as_default():        
-                _ = self.model.fit(X, y, batch_size=bs, epochs=self.epochs, verbose=False)
+
+        if self.epochs_are_steps:
+            steps_per_epoch = (len(X) + bs - 1) // bs
+            max_epochs = (max_epochs + steps_per_epoch - 1) // steps_per_epoch
+            data = tf.data.Dataset.from_tensor_slices((X, y)).batch(bs).repeat(max_epochs).take(self.epochs)
+
+            for X_batch, y_batch in data.as_numpy_iterator():
+                with self.graph.as_default():
+                    with self.sess.as_default():
+                        _ = self.model.train_on_batch(X_batch, y_batch)
+        else:
+            with self.graph.as_default():
+                with self.sess.as_default():
+                    _ = self.model.fit(X, y, batch_size=bs, epochs=self.epochs, verbose=False)
     
     def predict(self, X):
         # All-purpose predict.

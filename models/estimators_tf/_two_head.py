@@ -37,7 +37,7 @@ class TwoHeadSearch():
         input_size = X_tr.shape[1]
 
         for param_id, params in enumerate(ParameterGrid(self.params_grid)):
-            model = TwoHeadNN(input_size, params['n_layers'], params['n_layers2'], params['n_units'], params['learning_rate'], params['activation'], params['dropout'], params['l2'], 'linear', params['batch_size'], params['epochs'])
+            model = TwoHeadNN(input_size, params['n_layers'], params['n_layers2'], params['n_units'], params['learning_rate'], params['activation'], params['dropout'], params['l2'], 'linear', params['batch_size'], params['epochs'], params['epochs_are_steps'])
 
             model.fit(X_tr, t_tr, y_tr)
 
@@ -66,7 +66,7 @@ class TwoHeadSearch():
         df_params.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_params.csv'), index=False)
 
 class TwoHeadNN():
-    def __init__(self, input_size, n_layers, n_layers2, n_units, learning_rate, activation, dropout, l2, out_layer, batch_size, epochs):
+    def __init__(self, input_size, n_layers, n_layers2, n_units, learning_rate, activation, dropout, l2, out_layer, batch_size, epochs, epochs_are_steps=False):
         self.input_size = input_size
         self.n_layers = n_layers
         self.n_layers2 = n_layers2
@@ -78,6 +78,7 @@ class TwoHeadNN():
         self.out_layer = out_layer
         self.batch_size = batch_size
         self.epochs = epochs
+        self.epochs_are_steps = epochs_are_steps
 
         self.graph = tf.Graph()
         with self.graph.as_default():
@@ -135,9 +136,19 @@ class TwoHeadNN():
         bs = self.batch_size if self.batch_size > 0 else len(X)
         y_c, y_t, sw_c, sw_t = _get_ct_data(t, y)
 
-        with self.graph.as_default():
-            with self.sess.as_default():
-                _ = self.model.fit(X, (y_c, y_t), batch_size=bs, epochs=self.epochs, verbose=False, sample_weight=(sw_c, sw_t))
+        if self.epochs_are_steps:
+            steps_per_epoch = (len(X) + bs - 1) // bs
+            max_epochs = (max_epochs + steps_per_epoch - 1) // steps_per_epoch
+            data = tf.data.Dataset.from_tensor_slices((X, y_c, y_t, sw_c, sw_t)).batch(bs).repeat(max_epochs).take(self.epochs)
+
+            for X_batch, y_c_batch, y_t_batch, sw_c_batch, sw_t_batch in data.as_numpy_iterator():
+                with self.graph.as_default():
+                    with self.sess.as_default():
+                        _ = self.model.train_on_batch(X_batch, (y_c_batch, y_t_batch), sample_weight=(sw_c_batch, sw_t_batch))
+        else:
+            with self.graph.as_default():
+                with self.sess.as_default():
+                    _ = self.model.fit(X, (y_c, y_t), batch_size=bs, epochs=self.epochs, verbose=False, sample_weight=(sw_c, sw_t))
 
     def predict_all(self, X):
         with self.graph.as_default():

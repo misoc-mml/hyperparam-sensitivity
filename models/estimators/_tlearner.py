@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
+from sklearn.metrics import r2_score
 
 from ._common import get_params, get_regressor
 from helpers.data import get_scaler
@@ -149,7 +150,7 @@ class TEvaluator():
         y0_test = y_test_scaled[t_test < 1]
         y1_test = y_test_scaled[t_test > 0]
 
-        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe', 'ate_hat']
+        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe', 'ate_hat', 'r2_score_m0', 'r2_score_m1']
         preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
         preds_m1_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m1_iter{iter_id}'
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}'
@@ -161,16 +162,20 @@ class TEvaluator():
             results_cols.insert(1, 'fold_id')
 
         m0_mse = {}
+        m0_r2 = {}
         for p0_id in self.df_m0_params['id']:
             preds_m0_filename = f'{preds_m0_filename_base}_param{p0_id}.csv'
             df_m0 = pd.read_csv(os.path.join(self.opt.results_path, preds_m0_filename))
             m0_mse[p0_id] = mse(df_m0['y_hat'].to_numpy(), y0_test)
+            m0_r2[p0_id] = r2_score(y0_test, df_m0['y_hat'].to_numpy())
         
         m1_mse = {}
+        m1_r2 = {}
         for p1_id in self.df_m1_params['id']:
             preds_m1_filename = f'{preds_m1_filename_base}_param{p1_id}.csv'
             df_m1 = pd.read_csv(os.path.join(self.opt.results_path, preds_m1_filename))
             m1_mse[p1_id] = mse(df_m1['y_hat'].to_numpy(), y1_test)
+            m1_r2[p1_id] = r2_score(y1_test, df_m1['y_hat'].to_numpy())
 
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
@@ -183,7 +188,7 @@ class TEvaluator():
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)
 
-            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id], test_ate, test_pehe, ate_hat]
+            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id], test_ate, test_pehe, ate_hat, m0_r2[p0_id], m1_r2[p1_id]]
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)

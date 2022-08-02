@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
+from sklearn.metrics import r2_score
 
 from ._common import get_params, get_regressor
 from helpers.data import xt_from_x, get_scaler
@@ -84,7 +85,7 @@ class SEvaluator():
         return pd.DataFrame(test_results, columns=results_cols)
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
-        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat']
+        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat', 'r2_score']
         
         if self.opt.scale_y:
             # Replicate the scaler
@@ -112,10 +113,12 @@ class SEvaluator():
             y_hat = df_preds['y_hat'].to_numpy()
             test_mse = mse(y_hat, y_test_scaled)
 
+            r2 = r2_score(y_test_scaled, y_hat)
+
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)
 
-            result = [iter_id, p_id, test_mse, test_ate, test_pehe, ate_hat]
+            result = [iter_id, p_id, test_mse, test_ate, test_pehe, ate_hat, r2]
 
             if self.opt.scale_y:
                 y_hat_inv = scaler.inverse_transform(y_hat)

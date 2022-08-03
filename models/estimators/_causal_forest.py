@@ -45,7 +45,24 @@ class CausalForestEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_params.csv'))
 
-    def score_cate(self, iter_id, fold_id, cate_test):
+    def rscore(self, iter_id, fold_id, scorer):
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
+        preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
+            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
+
+            cate_hat = df_preds['cate_hat'].to_numpy()
+            score = scorer.score(iter_id, fold_id, cate_hat)
+
+            result = [iter_id, fold_id, p_id, score]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
+
+    def score_cate(self, iter_id, fold_id, plugin):
         results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
         preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
 
@@ -55,6 +72,7 @@ class CausalForestEvaluator():
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
             cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_test = plugin.get_cate(iter_id, fold_id)
 
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)

@@ -3,7 +3,9 @@ ITERS=10
 MODELS=("sl" "tl")
 BASE_MODELS=("l1" "l2" "dt" "rf" "et" "kr" "cb" "lgbm")
 
+# [plugin, r_score]
 SCORER_TYPE="plugin"
+# [sl, tl, rs]
 SCORER_MODELS=("sl" "tl")
 SCORER_BASE_MODELS=("dt" "lgbm" "cb")
 

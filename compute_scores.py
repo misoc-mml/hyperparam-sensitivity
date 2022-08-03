@@ -11,7 +11,7 @@ import pandas as pd
 
 from helpers.utils import init_logger, get_model_name
 from models.estimators import SEvaluator, TEvaluator, CausalForestEvaluator
-from models.scorers import PluginScorer
+from models.scorers import PluginScorer, RScorerEvaluator
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -35,6 +35,8 @@ def get_parser():
 def get_scorer(opt):
     if opt.scorer_type == 'plugin':
         return PluginScorer(opt)
+    elif opt.scorer_type == 'r_score':
+        return RScorerEvaluator(opt)
     else:
         raise ValueError("Unrecognised 'get_scorer' key.")
 
@@ -73,8 +75,13 @@ if __name__ == "__main__":
     for i in range(n_iters):
         # CV iterations
         for k, _ in enumerate(splits['train'][i]):
-            scorer_cate = scorer.get_cate(i+1, k+1)
-            df_fold = evaluator.score_cate(i+1, k+1, scorer_cate)
+            if options.scorer_type == 'plugin':
+                df_fold = evaluator.score_cate(i+1, k+1, scorer)
+            elif options.scorer_type == 'r_score':
+                df_fold = evaluator.rscore(i+1, k+1, scorer)
+            else:
+                raise ValueError('Unrecognised scorer type.')
+
             df_all = pd.concat([df_all, df_fold], ignore_index=True)
 
     model_name = get_model_name(options)

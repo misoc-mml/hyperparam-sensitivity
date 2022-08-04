@@ -2,8 +2,11 @@ import os
 import numpy as np
 import pandas as pd
 
+def _mean_std_str(mean, std):
+    return f'{mean:.3f} +/- {std:.3f}'
+
 def _merge_scores(scores1, scores2):
-    return [f'{s1:.3f} +/- {s2:.3f}' for s1, s2 in zip(scores1, scores2)]
+    return [_mean_std_str(s1, s2) for s1, s2 in zip(scores1, scores2)]
 
 def load_scores(df_scores, df_test):
     gr = df_scores.groupby(['iter_id', 'param_id'], as_index=False).mean()
@@ -48,6 +51,22 @@ def get_risk(df):
     pehe_risk = [f'{pehe_risk_mean:.3f} +/- {pehe_risk_std:.3f}']
 
     return ate_risk, pehe_risk
+
+def get_best_metric(df, col):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+    best_iter = iter_gr.apply(lambda x: x.loc[x[col].idxmin(), [col]])
+    best_mean = np.mean(best_iter[col])
+    best_std = np.std(best_iter[col])
+
+    return _mean_std_str(best_mean, best_std)
+
+def get_best_by(df, by, targets):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+    best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmin(), targets])
+    best_mean = np.mean(best_by_iter[targets], axis=0)
+    best_std = np.std(best_by_iter[targets], axis=0)
+
+    return _merge_scores(best_mean, best_std)
 
 def get_achieved_best(df):
     iter_gr = df.groupby(['iter_id'], as_index=False)

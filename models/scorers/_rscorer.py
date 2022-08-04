@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+# This is just to fix the import error related to RScorer.
+from econml.dml import CausalForestDML
 from econml.score import RScorer
 from sklearn.model_selection import GridSearchCV
 
@@ -18,7 +20,7 @@ class RScorerWrapper():
         model_t_cv.fit(X, t.flatten())
 
         rscorer = RScorer(model_y=model_y_cv.best_estimator_, model_t=model_t_cv.best_estimator_, discrete_treatment=True, cv=self.opt.cv, random_state=self.opt.seed)
-        rscorer.fit(y, t, X=X)
+        rscorer.fit(y.flatten(), t.flatten(), X=X)
 
         # ((Y_res, T_res), base_score)
         return rscorer.lineardml_._cached_values.nuisances, rscorer.base_score_
@@ -26,11 +28,11 @@ class RScorerWrapper():
 class RScorerEvaluator():
     def __init__(self, opt):
         self.opt = opt
-        self.df_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'rs_{self.opt.base_model}_base_scores.csv'))
+        self.df_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores.csv'))
     
     def score(self, iter_id, fold_id, cate_hat):
         base_score = float(self.df_base_scores.loc[(self.df_base_scores['iter_id'] == iter_id) & (self.df_base_scores['fold_id'] == fold_id), 'base_score'])
 
-        df_res = pd.read_csv(os.path.join(self.opt.scorer_path, f'rs_{self.opt.base_model}_iter{iter_id}_fold{fold_id}.csv'))
+        df_res = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}.csv'))
 
         return rscore(cate_hat, df_res['y_res'].to_numpy(), df_res['t_res'].to_numpy(), base_score)

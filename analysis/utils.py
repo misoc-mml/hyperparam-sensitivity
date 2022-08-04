@@ -1,8 +1,15 @@
+import os
 import numpy as np
 import pandas as pd
 
 def _merge_scores(scores1, scores2):
     return [f'{s1:.3f} +/- {s2:.3f}' for s1, s2 in zip(scores1, scores2)]
+
+def load_scores(df_scores, df_test):
+    gr = df_scores.groupby(['iter_id', 'param_id'], as_index=False).mean()
+    gr = gr.drop(columns=['fold_id'])
+
+    return gr.merge(df_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
 def load_merge(path, method, cols=['mse']):
     val_scores = pd.read_csv(f'{path}/{method}/{method}_val_metrics.csv')
@@ -54,5 +61,27 @@ def get_achieved_best(df):
 
     d_mean = np.mean(df[['ate_on_mse', 'ate_best', 'pehe_on_mse', 'pehe_best']], axis=0)
     d_std = np.std(df[['ate_on_mse', 'ate_best', 'pehe_on_mse', 'pehe_best']], axis=0)
+
+    return _merge_scores(d_mean, d_std)
+
+def get_achieved_best_plugin(df):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+
+    plugin_ate_iter = iter_gr.apply(lambda x: x.loc[x['ate_val'].idxmin(), ['ate_test', 'pehe_test']])
+    plugin_pehe_iter = iter_gr.apply(lambda x: x.loc[x['pehe_val'].idxmin(), ['ate_test', 'pehe_test']])
+
+    best_ate_iter = iter_gr.apply(lambda x: x.loc[x['ate_test'].idxmin(), ['ate_test']])
+    best_pehe_iter = iter_gr.apply(lambda x: x.loc[x['pehe_test'].idxmin(), ['pehe_test']])
+
+    d = {'ate_on_plugin_ate': plugin_ate_iter['ate_test'],
+        'ate_on_plugin_pehe': plugin_pehe_iter['ate_test'],
+        'ate_best': best_ate_iter['ate_test'],
+        'pehe_on_plugin_ate': plugin_ate_iter['pehe_test'],
+        'pehe_on_plugin_pehe': plugin_pehe_iter['pehe_test'],
+        'pehe_best': best_pehe_iter['pehe_test']}
+    df = pd.DataFrame(data=d)
+
+    d_mean = np.mean(df[['ate_on_plugin_ate', 'ate_on_plugin_pehe', 'ate_best', 'pehe_on_plugin_ate', 'pehe_on_plugin_pehe', 'pehe_best']], axis=0)
+    d_std = np.std(df[['ate_on_plugin_ate', 'ate_on_plugin_pehe', 'ate_best', 'pehe_on_plugin_ate', 'pehe_on_plugin_pehe', 'pehe_best']], axis=0)
 
     return _merge_scores(d_mean, d_std)

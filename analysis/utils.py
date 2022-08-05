@@ -34,21 +34,44 @@ def get_mse_corr(df):
 
     return _merge_scores(corr_mean, corr_std)
 
+def _metric_risk(achieved, best, normalise=False):
+    risk_arr = abs(achieved - best)
+
+    if normalise:
+        risk_arr = risk_arr / best
+
+    return _mean_std_str(np.mean(risk_arr), np.std(risk_arr))
+
+def _risk_by_best(df, by, targets, lower_is_better, normalise):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+
+    if lower_is_better:
+        achieved_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmin(), targets])
+    else:
+        achieved_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmax(), targets])
+    
+    risks = []
+    for target in targets:
+        best_iter = iter_gr.apply(lambda x: x.loc[x[target].idxmin(), [target]])
+        risk = _metric_risk(achieved_iter[target], best_iter[target], normalise)
+        risks.append(risk)
+    
+    return risks
+
+def risk_by_lowest(df, by, targets, normalise=False):
+    return _risk_by_best(df, by, targets, True, normalise)
+
+def risk_by_highest(df, by, targets, normalise=False):
+    return _risk_by_best(df, by, targets, False, normalise)
+
 def get_risk(df):
     iter_gr = df.groupby(['iter_id'], as_index=False)
     best_mse_iter = iter_gr.apply(lambda x: x.loc[x['mse_val'].idxmin(), ['ate_test', 'pehe_test']])
     best_ate_iter = iter_gr.apply(lambda x: x.loc[x['ate_test'].idxmin(), ['ate_test']])
     best_pehe_iter = iter_gr.apply(lambda x: x.loc[x['pehe_test'].idxmin(), ['pehe_test']])
 
-    ate_risk_raw = (best_mse_iter['ate_test'] - best_ate_iter['ate_test'])
-    ate_risk_mean = np.mean(ate_risk_raw)
-    ate_risk_std = np.std(ate_risk_raw)
-    ate_risk = [f'{ate_risk_mean:.3f} +/- {ate_risk_std:.3f}']
-
-    pehe_risk_raw = (best_mse_iter['pehe_test'] - best_pehe_iter['pehe_test'])
-    pehe_risk_mean = np.mean(pehe_risk_raw)
-    pehe_risk_std = np.std(pehe_risk_raw)
-    pehe_risk = [f'{pehe_risk_mean:.3f} +/- {pehe_risk_std:.3f}']
+    ate_risk = _metric_risk(best_mse_iter['ate_test'], best_ate_iter['ate_test'])
+    pehe_risk = _metric_risk(best_mse_iter['pehe_test'], best_pehe_iter['pehe_test'])
 
     return ate_risk, pehe_risk
 

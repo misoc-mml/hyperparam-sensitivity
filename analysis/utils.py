@@ -60,13 +60,24 @@ def get_best_metric(df, col):
 
     return _mean_std_str(best_mean, best_std)
 
-def get_best_by(df, by, targets):
+def _get_by_best(df, by, targets, lower_is_better):
     iter_gr = df.groupby(['iter_id'], as_index=False)
-    best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmin(), targets])
+
+    if lower_is_better:
+        best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmin(), targets])
+    else:
+        best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmax(), targets])
+
     best_mean = np.mean(best_by_iter[targets], axis=0)
     best_std = np.std(best_by_iter[targets], axis=0)
 
     return _merge_scores(best_mean, best_std)
+
+def get_by_lowest(df, by, targets):
+    return _get_by_best(df, by, targets, True)
+
+def get_by_highest(df, by, targets):
+    return _get_by_best(df, by, targets, False)
 
 def get_achieved_best(df):
     iter_gr = df.groupby(['iter_id'], as_index=False)

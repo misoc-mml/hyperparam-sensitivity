@@ -18,13 +18,6 @@ def compare_risks(meta_models, base_models, plugin_meta_models, plugin_base_mode
     df = _process_rscores(df, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode)
     return df
 
-def compare_risks_norm(meta_models, base_models, plugin_meta_models, plugin_base_models, rscore_base_models, base_dir, plugin_dir, rscore_dir):
-    mode = 'risk_norm'
-    df = _process_mse(None, meta_models, base_models, base_dir, mode)
-    df = _process_plugins(df, plugin_meta_models, plugin_base_models, meta_models, base_models, base_dir, plugin_dir, mode)
-    df = _process_rscores(df, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode)
-    return df
-
 def _process_test(meta_models, base_models, results_dir):
     test_list = []
     for mm in meta_models:

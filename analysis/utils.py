@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import pandas as pd
 
@@ -34,25 +33,19 @@ def get_mse_corr(df):
 
     return _merge_scores(corr_mean, corr_std)
 
-def _metric_risk(achieved, best, normalise=False):
+def _metric_risk(achieved, best):
     risk_arr = abs(achieved - best)
-
-    if normalise:
-        risk_arr = risk_arr / best
-
     return _mean_std_str(np.mean(risk_arr), np.std(risk_arr))
 
 def fn_by_best(df, by, targets, mode, lower_is_better):
     if mode == 'metric':
         return _metric_by_best(df, by, targets, lower_is_better)
     elif mode == 'risk':
-        return _risk_by_best(df, by, targets, lower_is_better, False)
-    elif mode == 'risk_norm':
-        return _risk_by_best(df, by, targets, lower_is_better, True)
+        return _risk_by_best(df, by, targets, lower_is_better)
     else:
         raise ValueError("Unrecognised mode in 'fn_by_best'.")
 
-def _risk_by_best(df, by, targets, lower_is_better, normalise):
+def _risk_by_best(df, by, targets, lower_is_better):
     iter_gr = df.groupby(['iter_id'], as_index=False)
 
     if lower_is_better:
@@ -63,16 +56,16 @@ def _risk_by_best(df, by, targets, lower_is_better, normalise):
     risks = []
     for target in targets:
         best_iter = iter_gr.apply(lambda x: x.loc[x[target].idxmin(), [target]])
-        risk = _metric_risk(achieved_iter[target], best_iter[target], normalise)
+        risk = _metric_risk(achieved_iter[target], best_iter[target])
         risks.append(risk)
     
     return risks
 
-def risk_by_lowest(df, by, targets, normalise=False):
-    return _risk_by_best(df, by, targets, True, normalise)
+def risk_by_lowest(df, by, targets):
+    return _risk_by_best(df, by, targets, True)
 
-def risk_by_highest(df, by, targets, normalise=False):
-    return _risk_by_best(df, by, targets, False, normalise)
+def risk_by_highest(df, by, targets):
+    return _risk_by_best(df, by, targets, False)
 
 def get_risk(df):
     iter_gr = df.groupby(['iter_id'], as_index=False)

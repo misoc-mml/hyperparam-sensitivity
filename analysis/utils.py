@@ -42,6 +42,16 @@ def _metric_risk(achieved, best, normalise=False):
 
     return _mean_std_str(np.mean(risk_arr), np.std(risk_arr))
 
+def fn_by_best(df, by, targets, mode, lower_is_better):
+    if mode == 'metric':
+        return _metric_by_best(df, by, targets, lower_is_better)
+    elif mode == 'risk':
+        return _risk_by_best(df, by, targets, lower_is_better, False)
+    elif mode == 'risk_norm':
+        return _risk_by_best(df, by, targets, lower_is_better, True)
+    else:
+        raise ValueError("Unrecognised mode in 'fn_by_best'.")
+
 def _risk_by_best(df, by, targets, lower_is_better, normalise):
     iter_gr = df.groupby(['iter_id'], as_index=False)
 
@@ -83,7 +93,7 @@ def get_best_metric(df, col):
 
     return _mean_std_str(best_mean, best_std)
 
-def _get_by_best(df, by, targets, lower_is_better):
+def _metric_by_best(df, by, targets, lower_is_better):
     iter_gr = df.groupby(['iter_id'], as_index=False)
 
     if lower_is_better:
@@ -96,11 +106,11 @@ def _get_by_best(df, by, targets, lower_is_better):
 
     return _merge_scores(best_mean, best_std)
 
-def get_by_lowest(df, by, targets):
-    return _get_by_best(df, by, targets, True)
+def metric_by_lowest(df, by, targets):
+    return _metric_by_best(df, by, targets, True)
 
-def get_by_highest(df, by, targets):
-    return _get_by_best(df, by, targets, False)
+def metric_by_highest(df, by, targets):
+    return _metric_by_best(df, by, targets, False)
 
 def get_achieved_best(df):
     iter_gr = df.groupby(['iter_id'], as_index=False)

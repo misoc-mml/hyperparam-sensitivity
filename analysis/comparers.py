@@ -7,6 +7,7 @@ def compare_metrics(meta_models, base_models, plugin_meta_models, plugin_base_mo
     mode = 'metric'
     df = _process_test(meta_models, base_models, base_dir)
     df = _process_mse(df, meta_models, base_models, base_dir, mode)
+    df = _process_r2scores(df, meta_models, base_models, base_dir, mode)
     df = _process_plugins(df, plugin_meta_models, plugin_base_models, meta_models, base_models, base_dir, plugin_dir, mode)
     df = _process_rscores(df, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode)
     return df
@@ -14,6 +15,7 @@ def compare_metrics(meta_models, base_models, plugin_meta_models, plugin_base_mo
 def compare_risks(meta_models, base_models, plugin_meta_models, plugin_base_models, rscore_base_models, base_dir, plugin_dir, rscore_dir):
     mode = 'risk'
     df = _process_mse(None, meta_models, base_models, base_dir, mode)
+    df = _process_r2scores(df, meta_models, base_models, base_dir, mode)
     df = _process_plugins(df, plugin_meta_models, plugin_base_models, meta_models, base_models, base_dir, plugin_dir, mode)
     df = _process_rscores(df, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode)
     return df
@@ -107,3 +109,26 @@ def _process_rscores(df_main, rscore_base_models, meta_models, base_models, base
         df_copy = df_copy.merge(df_rscore, on=['name'])
     
     return df_copy
+
+def _process_r2scores(df_main, meta_models, base_models, results_dir, mode):
+    r2_list = []
+    for mm in meta_models:
+        for bm in base_models:
+            est_name = f'{mm}_{bm}'
+            df_base_test = pd.read_csv(os.path.join(results_dir, est_name, f'{est_name}_test_metrics.csv'))
+
+            # R^2 Score
+            df_base_val = pd.read_csv(os.path.join(results_dir, est_name, f'{est_name}_val_metrics.csv'))
+            df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+            if mm == 'tl':
+                df_base_val_gr['r2_score'] = df_base_val_gr[['r2_score_m0', 'r2_score_m1']].mean(axis=1)
+                df_base_test['r2_score'] = df_base_test[['r2_score_m0', 'r2_score_m1']].mean(axis=1)
+
+            df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+            r2_i = ut.fn_by_best(df_base, 'r2_score_val', ['ate_test', 'pehe_test'], mode, False)
+            r2_list.append([est_name] + r2_i)
+
+    df_r2 = pd.DataFrame(r2_list, columns=['name', 'ate_r2', 'pehe_r2'])
+
+    return df_main.merge(df_r2, on=['name'])

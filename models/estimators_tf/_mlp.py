@@ -49,17 +49,25 @@ class MLP():
         return model
     
     def fit(self, X, y):
-        bs = self.batch_size if self.batch_size > 0 else len(X)
+        bs = self.batch_size if self.batch_size > 0 else X.shape[0]
 
         if self.epochs_are_steps:
-            steps_per_epoch = (len(X) + bs - 1) // bs
-            max_epochs = (max_epochs + steps_per_epoch - 1) // steps_per_epoch
-            data = tf.data.Dataset.from_tensor_slices((X, y)).batch(bs).repeat(max_epochs).take(self.epochs)
+            # Number of steps
+            epoch_i = 0
+            while(epoch_i < self.epochs):
+                for idx_start in range(0, X.shape[0], bs):
+                    # Last batch can be smaller
+                    idx_end = min(idx_start + bs, X.shape[0])
+                    X_batch, y_batch = X[idx_start:idx_end], y[idx_start:idx_end]
 
-            for X_batch, y_batch in data.as_numpy_iterator():
-                with self.graph.as_default():
-                    with self.sess.as_default():
-                        _ = self.model.train_on_batch(X_batch, y_batch)
+                    with self.graph.as_default():
+                        with self.sess.as_default():
+                            _ = self.model.train_on_batch(X_batch, y_batch)
+                    
+                    epoch_i += 1
+                    # Exit if reached desired number of steps
+                    if epoch_i >= self.epochs:
+                        break
         else:
             with self.graph.as_default():
                 with self.sess.as_default():

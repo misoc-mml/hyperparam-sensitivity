@@ -137,14 +137,21 @@ class TwoHeadNN():
         y_c, y_t, sw_c, sw_t = _get_ct_data(t, y)
 
         if self.epochs_are_steps:
-            steps_per_epoch = (len(X) + bs - 1) // bs
-            max_epochs = (max_epochs + steps_per_epoch - 1) // steps_per_epoch
-            data = tf.data.Dataset.from_tensor_slices((X, y_c, y_t, sw_c, sw_t)).batch(bs).repeat(max_epochs).take(self.epochs)
+            epoch_i = 0
+            while(epoch_i < self.epochs):
+                for idx_start in range(0, X.shape[0], bs):
+                    idx_end = min(idx_start + bs, X.shape[0])
+                    X_batch = X[idx_start:idx_end]
+                    y_c_batch, y_t_batch = y_c[idx_start:idx_end], y_t[idx_start:idx_end]
+                    sw_c_batch, sw_t_batch = sw_c[idx_start:idx_end], sw_t[idx_start:idx_end]
 
-            for X_batch, y_c_batch, y_t_batch, sw_c_batch, sw_t_batch in data.as_numpy_iterator():
-                with self.graph.as_default():
-                    with self.sess.as_default():
-                        _ = self.model.train_on_batch(X_batch, (y_c_batch, y_t_batch), sample_weight=(sw_c_batch, sw_t_batch))
+                    with self.graph.as_default():
+                        with self.sess.as_default():
+                            _ = self.model.train_on_batch(X_batch, (y_c_batch, y_t_batch), sample_weight=(sw_c_batch, sw_t_batch))
+                    
+                    epoch_i += 1
+                    if epoch_i >= self.epochs:
+                        break
         else:
             with self.graph.as_default():
                 with self.sess.as_default():

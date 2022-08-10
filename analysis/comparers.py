@@ -20,6 +20,14 @@ def compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plug
     df = _process_rscores(df, rscore_base_models, cate_models, base_dir, rscore_dir, mode)
     return df
 
+def compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir):
+    mode = 'corr'
+    df = _process_mse(None, cate_models, base_dir, mode)
+    df = _process_r2scores(df, cate_models, base_dir, mode)
+    df = _process_plugins(df, plugin_models, cate_models, base_dir, plugin_dir, mode)
+    df = _process_rscores(df, rscore_base_models, cate_models, base_dir, rscore_dir, mode)
+    return df
+
 def _process_test(cate_models, results_dir):
     test_list = []
     for cm in cate_models:

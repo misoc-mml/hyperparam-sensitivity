@@ -27,21 +27,26 @@ def load_merge(path, method, cols=['mse']):
     return gr.merge(test_scores, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
 def get_mse_corr(df):
-    corr_per_iter = df.groupby(['iter_id'], as_index=False).corrwith(df['mse_val'])
-    corr_mean = np.mean(corr_per_iter[['ate_val', 'pehe_val', 'mse_test', 'ate_test', 'pehe_test']], axis=0)
-    corr_std = np.std(corr_per_iter[['ate_val', 'pehe_val', 'mse_test', 'ate_test', 'pehe_test']], axis=0)
-
-    return _merge_scores(corr_mean, corr_std)
+    return _corr_with(df, 'mse_val', ['ate_val', 'pehe_val', 'mse_test', 'ate_test', 'pehe_test'])
 
 def _metric_risk(achieved, best):
     risk_arr = abs(achieved - best)
     return _mean_std_str(np.mean(risk_arr), np.std(risk_arr))
+
+def _corr_with(df, by, targets):
+    corr_iter = df.groupby(['iter_id'], as_index=False).corrwith(df[by])
+    corr_mean = np.mean(corr_iter[targets], axis=0)
+    corr_std = np.std(corr_iter[targets], axis=0)
+
+    return _merge_scores(corr_mean, corr_std)
 
 def fn_by_best(df, by, targets, mode, lower_is_better):
     if mode == 'metric':
         return _metric_by_best(df, by, targets, lower_is_better)
     elif mode == 'risk':
         return _risk_by_best(df, by, targets, lower_is_better)
+    elif mode == 'corr':
+        return _corr_with(df, by, targets)
     else:
         raise ValueError("Unrecognised mode in 'fn_by_best'.")
 

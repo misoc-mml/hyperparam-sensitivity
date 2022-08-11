@@ -30,12 +30,11 @@ def get_parser():
     parser.add_argument('--data_path', type=str)
     parser.add_argument('--sf', dest='splits_file', type=str)
     parser.add_argument('--iters', type=int, default=-1)
+    parser.add_argument('--skip_iter', type=int, default=0)
     parser.add_argument('-o', type=str, dest='output_path', default='./')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--scaler', type=str, choices=['minmax', 'std'], default='std')
     parser.add_argument('--scale_y', action='store_true')
-    parser.add_argument('--sr', dest='save_results', action='store_true')
-    parser.add_argument('--sp', dest='save_preds', action='store_true')
     parser.add_argument('--debug', action='store_true')
 
     # Estimation
@@ -91,6 +90,7 @@ if __name__ == "__main__":
     # (iters, folds, idx)
     splits = np.load(options.splits_file, allow_pickle=True)
     n_iters = options.iters if options.iters > 0 else splits.shape[0]
+    skipped = 0
     dataset = get_dataset('ihdp', options.data_path, n_iters)
 
     model = get_model(options)
@@ -100,6 +100,10 @@ if __name__ == "__main__":
 
     # Data iterations
     for i in range(n_iters):
+        if skipped < options.skip_iter:
+            skipped += 1
+            continue
+
         train, test = dataset._get_train_test(i)
 
         (X_tr, t_tr, y_tr), _ = train

@@ -74,7 +74,7 @@ class SEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             score = scorer.score(iter_id, fold_id, cate_hat)
 
             result = [iter_id, fold_id, p_id, score]
@@ -91,7 +91,7 @@ class SEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             cate_test = plugin.get_cate(iter_id, fold_id)
 
             test_pehe = pehe(cate_test, cate_hat)
@@ -114,6 +114,9 @@ class SEvaluator():
         else:
             y_test_scaled = y_test
 
+        if y_test_scaled.ndim == 1:
+            y_test_scaled = y_test_scaled.reshape(-1, 1)
+
         preds_filename_base = f'{self.model_name}_iter{iter_id}'
         if fold_id > 0:
             preds_filename_base += f'_fold{fold_id}'
@@ -124,11 +127,11 @@ class SEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             # Scaled MSE (y_hat is scaled).
-            y_hat = df_preds['y_hat'].to_numpy()
+            y_hat = df_preds['y_hat'].to_numpy().reshape(-1, 1)
             test_mse = mse(y_hat, y_test_scaled)
 
             r2 = r2_score(y_test_scaled, y_hat)
@@ -149,3 +152,44 @@ class SEvaluator():
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
+
+class SDebug():
+    def __init__(self, opt):
+        self.opt = opt
+        self.model = get_regressor(self.opt.base_model)
+        self.params_grid = get_params(self.opt.base_model)
+    
+    def run(self, train, test, iter_id, cate_test):
+        X_tr = train[0]
+        t_tr = train[1].flatten()
+        y_tr = train[2].flatten()
+        Xt_tr = np.concatenate([X_tr, t_tr.reshape(-1, 1)], axis=1)
+        X_test = test[0]
+        t_test = test[1].flatten()
+        y_test = test[2]
+        Xt_test = np.concatenate([X_test, t_test.reshape(-1, 1)], axis=1)
+
+        xt0, xt1 = xt_from_x(X_test)
+
+        results = []
+        for param_id, params in enumerate(ParameterGrid(self.params_grid)):
+            model1 = clone(self.model)
+            model1.set_params(**params)
+
+            model1.fit(Xt_tr, y_tr)
+
+            y_hat = model1.predict(Xt_test).reshape(-1, 1)
+            y0_hat = model1.predict(xt0).reshape(-1, 1)
+            y1_hat = model1.predict(xt1).reshape(-1, 1)
+            
+            cate_hat = y1_hat - y0_hat
+
+            test_mse = mse(y_hat, y_test)
+            r2 = r2_score(y_test, y_hat)
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            results.append([iter_id, param_id+1, test_mse, r2, test_ate, test_pehe])
+
+        cols = ['fold_id', 'param_id', 'mse', 'r2_score', 'ate', 'pehe']
+        return pd.DataFrame(results, columns=cols)

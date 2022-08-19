@@ -3,6 +3,12 @@
 import numpy as np
 
 def mse(a, b):
+    # Make sure both arrays are 2D.
+    if a.ndim == 1:
+        a = a.reshape(-1, 1)
+    if b.ndim == 1:
+        b = b.reshape(-1, 1)
+
     return np.mean((a - b)**2)
 
 def rmse(a, b):

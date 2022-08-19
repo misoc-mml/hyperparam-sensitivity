@@ -127,7 +127,7 @@ class TEvaluator():
             preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
             df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
 
-            cate_hat = df_cate['cate_hat'].to_numpy()
+            cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
             score = scorer.score(iter_id, fold_id, cate_hat)
 
             result = [iter_id, fold_id, p_id, score]
@@ -144,7 +144,7 @@ class TEvaluator():
             preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
             df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
 
-            cate_hat = df_cate['cate_hat'].to_numpy()
+            cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
             cate_test = plugin.get_cate(iter_id, fold_id)
 
             test_pehe = pehe(cate_test, cate_hat)
@@ -165,8 +165,8 @@ class TEvaluator():
             y_test_scaled = y_test
         
         # Split y_test into y0 and y1
-        y0_test = y_test_scaled[t_test < 1]
-        y1_test = y_test_scaled[t_test > 0]
+        y0_test = y_test_scaled[t_test < 1].reshape(-1, 1)
+        y1_test = y_test_scaled[t_test > 0].reshape(-1, 1)
 
         results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe', 'ate_hat', 'r2_score_m0', 'r2_score_m1']
         preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
@@ -184,23 +184,23 @@ class TEvaluator():
         for p0_id in self.df_m0_params['id']:
             preds_m0_filename = f'{preds_m0_filename_base}_param{p0_id}.csv'
             df_m0 = pd.read_csv(os.path.join(self.opt.results_path, preds_m0_filename))
-            m0_mse[p0_id] = mse(df_m0['y_hat'].to_numpy(), y0_test)
-            m0_r2[p0_id] = r2_score(y0_test, df_m0['y_hat'].to_numpy())
+            m0_mse[p0_id] = mse(df_m0['y_hat'].to_numpy().reshape(-1, 1), y0_test)
+            m0_r2[p0_id] = r2_score(y0_test, df_m0['y_hat'].to_numpy().reshape(-1, 1))
         
         m1_mse = {}
         m1_r2 = {}
         for p1_id in self.df_m1_params['id']:
             preds_m1_filename = f'{preds_m1_filename_base}_param{p1_id}.csv'
             df_m1 = pd.read_csv(os.path.join(self.opt.results_path, preds_m1_filename))
-            m1_mse[p1_id] = mse(df_m1['y_hat'].to_numpy(), y1_test)
-            m1_r2[p1_id] = r2_score(y1_test, df_m1['y_hat'].to_numpy())
+            m1_mse[p1_id] = mse(df_m1['y_hat'].to_numpy().reshape(-1, 1), y1_test)
+            m1_r2[p1_id] = r2_score(y1_test, df_m1['y_hat'].to_numpy().reshape(-1, 1))
 
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
             preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
             df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
 
-            cate_hat = df_cate['cate_hat'].to_numpy()
+            cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             test_pehe = pehe(cate_test, cate_hat)

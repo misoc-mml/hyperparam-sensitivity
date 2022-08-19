@@ -54,7 +54,7 @@ class CausalForestEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             score = scorer.score(iter_id, fold_id, cate_hat)
 
             result = [iter_id, fold_id, p_id, score]
@@ -71,7 +71,7 @@ class CausalForestEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             cate_test = plugin.get_cate(iter_id, fold_id)
 
             test_pehe = pehe(cate_test, cate_hat)
@@ -95,7 +95,7 @@ class CausalForestEvaluator():
             preds_filename = f'{preds_filename_base}_param{p_id}.csv'
             df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
 
-            cate_hat = df_preds['cate_hat'].to_numpy()
+            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             test_pehe = pehe(cate_test, cate_hat)

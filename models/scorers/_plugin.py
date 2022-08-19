@@ -88,4 +88,4 @@ class PluginScorer():
     
     def get_cate(self, iter, fold):
         df = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}.csv'))
-        return df['cate_hat'].to_numpy()
+        return df['cate_hat'].to_numpy().reshape(-1, 1)

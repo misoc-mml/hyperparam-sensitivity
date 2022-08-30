@@ -11,13 +11,14 @@ import argparse
 from helpers.utils import init_logger
 from helpers.data import get_scaler
 from models.estimators import SSearch, TSearch, CausalForestSearch
-from models.data import IHDP
+from models.data import IHDP, JOBS, TWINS, NEWS
 
 def get_parser():
     parser = argparse.ArgumentParser()
 
     # General
     parser.add_argument('--data_path', type=str)
+    parser.add_argument('--dtype', type=str, choices=['ihdp', 'jobs', 'news', 'twins'])
     parser.add_argument('--sf', dest='splits_file', type=str)
     parser.add_argument('--iters', type=int, default=-1)
     parser.add_argument('--skip_iter', type=int, default=0)
@@ -48,6 +49,12 @@ def get_dataset(name, path, iters):
     result = None
     if name == 'ihdp':
         result = IHDP(path, iters)
+    elif name == 'jobs':
+        result = JOBS(path, iters)
+    elif name == 'twins':
+        result = TWINS(path, iters)
+    elif name == 'news':
+        result = NEWS(path, iters)
     else:
         raise ValueError('Unknown dataset type selected.')
     return result
@@ -81,7 +88,7 @@ if __name__ == "__main__":
     splits = np.load(options.splits_file, allow_pickle=True)
     n_iters = options.iters if options.iters > 0 else splits.shape[0]
     skipped = 0
-    dataset = get_dataset('ihdp', options.data_path, n_iters)
+    dataset = get_dataset(options.dtype, options.data_path, n_iters)
 
     model = get_model(options)
 
@@ -96,8 +103,8 @@ if __name__ == "__main__":
 
         train, test = dataset._get_train_test(i)
 
-        (X_tr, t_tr, y_tr), _ = train
-        (X_test, t_test, y_test), _ = test
+        X_tr, t_tr, y_tr = dataset.get_xty(train)
+        X_test, t_test, y_test = dataset.get_xty(test)
 
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):

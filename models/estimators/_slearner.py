@@ -102,8 +102,8 @@ class SEvaluator():
         
         return pd.DataFrame(test_results, columns=results_cols)
 
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
-        results_cols = ['iter_id', 'param_id', 'mse', 'ate', 'pehe', 'ate_hat', 'r2_score']
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        results_cols = ['iter_id', 'param_id', 'mse'] + eval.metrics + ['ate_hat', 'r2_score']
         
         if self.opt.scale_y:
             # Replicate the scaler
@@ -133,13 +133,11 @@ class SEvaluator():
             # Scaled MSE (y_hat is scaled).
             y_hat = df_preds['y_hat'].to_numpy().reshape(-1, 1)
             test_mse = mse(y_hat, y_test_scaled)
-
             r2 = r2_score(y_test_scaled, y_hat)
 
-            test_pehe = pehe(cate_test, cate_hat)
-            test_ate = abs_ate(cate_test, cate_hat)
+            test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id, test_mse, test_ate, test_pehe, ate_hat, r2]
+            result = [iter_id, p_id, test_mse] + test_metrics + [ate_hat, r2]
 
             if self.opt.scale_y:
                 y_hat_inv = scaler.inverse_transform(y_hat)

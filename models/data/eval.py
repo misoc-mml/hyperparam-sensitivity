@@ -1,103 +1,110 @@
 import numpy as np
+from sklearn.metrics import roc_auc_score
 
-def rmse(a, b):
-    """"
-    Root mean squared error between two arrays
-    """
-    return np.sqrt(((a - b)**2).mean())
+from helpers.metrics import abs_ate, pehe
 
 class Evaluator(object):
-    """
-    Class that provides some functionality to evaluate the results.
+    def __init__(self, mu0, mu1):
+        self.mu0 = mu0.reshape(-1, 1) if mu0.ndim == 1 else mu0
+        self.mu1 = mu1.reshape(-1, 1) if mu1.ndim == 1 else mu1
+        self.cate_true = self.mu1 = self.mu0
+        self.metrics = ['ate', 'pehe']
 
-    Param:
-    ------
+    def get_metrics(self, cate_hat):
+        ate_val = abs_ate(self.cate_true, cate_hat)
+        pehe_val = pehe(self.cate_true, cate_hat)
+        return [ate_val, pehe_val]
 
-    y :     array-like, shape=(num_samples)
-            Observed outcome
+class EvaluatorJobs(object):
+    def __init__(self, yf, t, e):
+        self.yf = yf
+        self.t = t
+        self.e = e
+        self.metrics = ['att', 'policy']
 
-    t :     array-like, shape=(num_samples)
-            Binary array representing the presence (t[i] == 1) or absence (t[i]==0) of treatment
+    def get_metrics(self, cate_hat):
+        att = np.mean(self.yf[self.t > 0]) - np.mean(self.yf[(1 - self.t + self.e) > 1])
 
-    y_cf :  array-like, shape=(num_samples) or None, optional
-            Counterfactual outcome (i.e., what would the outcome be if !t
+        att_pred = np.mean(cate_hat[(self.t + self.e) > 1])
+        bias_att = att_pred - att
 
-    mu0 :   array-like, shape=(num_samples) or None, optional
-            Outcome if no treatment and in absence of noise
+        policy_value = self.policy_val(cate_hat[self.e > 0])
 
-    mu1 :   array-like, shape=(num_samples) or None, optional
-            Outcome if treatment and in absence of noise
+        # ATT, Policy
+        return [np.abs(bias_att), 1 - policy_value]
 
-    """
-    def __init__(self, y, t, y_cf=None, mu0=None, mu1=None):
+    def policy_val(self, cate_hat):
+        """
+        Computes the value of the policy defined by predicted effect
+
+        :param cate_hat: predicted effect (for the experimental data only)
+
+        :return: policy value
+
+        """
+        # Consider only the cases for which we have experimental data (i.e., e > 0)
+        t = self.t[self.e > 0]
+        yf = self.yf[self.e > 0]
+
+        if np.any(np.isnan(cate_hat)):
+            return np.nan, np.nan
+
+        policy = cate_hat > 0.0
+        treat_overlap = (policy == t) * (t > 0)
+        control_overlap = (policy == t) * (t < 1)
+
+        if np.sum(treat_overlap) == 0:
+            treat_value = 0
+        else:
+            treat_value = np.mean(yf[treat_overlap])
+
+        if np.sum(control_overlap) == 0:
+            control_value = 0
+        else:
+            control_value = np.mean(yf[control_overlap])
+
+        pit = np.mean(policy)
+        policy_value = pit * treat_value + (1 - pit) * control_value
+
+        return policy_value
+
+class EvaluatorTwins(object):
+    def __init__(self, y, t, y_cf):
         self.y = y
         self.t = t
         self.y_cf = y_cf
-        self.mu0 = mu0
-        self.mu1 = mu1
-        if mu0 is not None and mu1 is not None:
-            self.true_ite = mu1 - mu0
+        self.mu0 = self.y * (1 - self.t) + self.y_cf * self.t
+        self.mu1 = self.y * self.t + self.y_cf * (1 - self.t)
+        self.cate_true = self.mu1 - self.mu0
+        if self.cate_true.ndim == 1:
+            self.cate_true = self.cate_true.reshape(-1, 1)
+        self.metrics = ['ate', 'pehe']
+        self.metrics_y = ['ate', 'pehe', 'auc', 'cf_auc']
 
-    def rmse_ite(self, ypred1, ypred0):
-        """"
-        Root mean squared error of the Individual Treatment Effect (ITE)
+    def get_metrics(self, cate_hat):
+        ate_val = abs_ate(self.cate_true, cate_hat)
+        pehe_val = pehe(self.cate_true, cate_hat)
+        return [ate_val, pehe_val]
 
-        :param ypred1: prediction for treatment case
-        :param ypred0: prediction for control case
+    def get_metrics_y(self, y0_hat, y1_hat):
+        if y0_hat.ndim == 1:
+            y0_hat = y0_hat.reshape(-1, 1)
+        if y1_hat.ndim == 1:
+            y1_hat = y1_hat.reshape(-1, 1)
+        
+        ate_val, pehe_val = self.get_metrics(y1_hat - y0_hat)
+        auc, cf_auc = self._get_auc(y0_hat, y1_hat)
+        return [ate_val, pehe_val, auc, cf_auc]
 
-        :return: the RMSE of the ITE
+    def _get_auc(self, ypred0, ypred1):
+        # Combined AUC (as in Yao et al.)
+        # https://github.com/Osier-Yi/SITE/blob/master/simi_ite/evaluation.py
+        y_label = np.concatenate((self.mu0, self.mu1), axis=0)
+        y_label_pred = np.concatenate((ypred0, ypred1), axis=0)
+        auc = roc_auc_score(y_label, y_label_pred)
 
-        """
-        pred_ite = np.zeros_like(self.true_ite)
-        idx1, idx0 = np.where(self.t == 1), np.where(self.t == 0)
-        ite1, ite0 = self.y[idx1] - ypred0[idx1], ypred1[idx0] - self.y[idx0]
-        pred_ite[idx1] = ite1
-        pred_ite[idx0] = ite0
-        return rmse(self.true_ite, pred_ite)
+        # Counterfactual AUC (as in Louizos et al.)
+        y_cf = (1 - self.t) * ypred1 + self.t * ypred0
+        cf_auc = roc_auc_score(self.y_cf, y_cf)  
 
-    def abs_ate(self, ypred1, ypred0):
-        """
-        Absolute error for the Average Treatment Effect (ATE)
-        :param ypred1: prediction for treatment case
-        :param ypred0: prediction for control case
-        :return: absolute ATE
-        """
-        return np.abs(np.mean(ypred1 - ypred0) - np.mean(self.true_ite))
-
-    def pehe(self, ypred1, ypred0):
-        """
-        Precision in Estimating the Heterogeneous Treatment Effect (PEHE)
-
-        :param ypred1: prediction for treatment case
-        :param ypred0: prediction for control case
-
-        :return: PEHE
-        """
-        return rmse(self.mu1 - self.mu0, ypred1 - ypred0)
-
-    def calc_stats(self, ypred1, ypred0):
-        """
-        Calculate some metrics
-
-        :param ypred1: predicted outcome if treated
-        :param ypred0: predicted outcome if not treated
-
-        :return ite: RMSE of ITE
-        :return ate: absolute error for the ATE
-        :return pehe: PEHE
-        """
-        ite = self.rmse_ite(ypred1, ypred0)
-        ate = self.abs_ate(ypred1, ypred0)
-        pehe = self.pehe(ypred1, ypred0)
-        return ite, ate, pehe
-
-    def calc_stats_effect(self, pred_ite):
-        ite = pehe = rmse(self.true_ite, pred_ite)
-        ate = np.abs(np.mean(pred_ite) - np.mean(self.true_ite))
-        return ite, ate, pehe
-    
-    def train_val_split(self, train_idx, val_idx):
-        train_eval = Evaluator(self.y[train_idx], self.t[train_idx], y_cf=self.y_cf[train_idx], mu0=self.mu0[train_idx], mu1=self.mu1[train_idx])
-        val_eval = Evaluator(self.y[val_idx], self.t[val_idx], y_cf=self.y_cf[val_idx], mu0=self.mu0[val_idx], mu1=self.mu1[val_idx])
-        return train_eval, val_eval
-
+        return auc, cf_auc

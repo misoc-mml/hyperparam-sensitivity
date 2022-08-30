@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import pandas as pd
 
-from models.data import IHDP
+from models.data import IHDP, JOBS, TWINS, NEWS
 from models.estimators import SEvaluator, TEvaluator, CausalForestEvaluator
 from helpers.utils import init_logger, get_model_name
 
@@ -13,6 +13,7 @@ def get_parser():
 
     # General
     parser.add_argument('--data_path', type=str)
+    parser.add_argument('--dtype', type=str, choices=['ihdp', 'jobs', 'news', 'twins'])
     parser.add_argument('--results_path', type=str)
     parser.add_argument('--sf', dest='splits_file', type=str)
     parser.add_argument('--iters', type=int, default=-1)
@@ -40,6 +41,12 @@ def get_dataset(name, path, iters):
     result = None
     if name == 'ihdp':
         result = IHDP(path, iters)
+    elif name == 'jobs':
+        result = JOBS(path, iters)
+    elif name == 'twins':
+        result = TWINS(path, iters)
+    elif name == 'news':
+        result = NEWS(path, iters)
     else:
         raise ValueError('Unknown dataset type selected.')
     return result
@@ -59,7 +66,7 @@ if __name__ == "__main__":
     # (iters, folds, idx)
     splits = np.load(options.splits_file, allow_pickle=True)
     n_iters = options.iters if options.iters > 0 else splits.shape[0]
-    dataset = get_dataset('ihdp', options.data_path, n_iters)
+    dataset = get_dataset(options.dtype, options.data_path, n_iters)
 
     # iter id, fold id, param id, mse, ate, pehe
     # iter id, param id, mse, ate, pehe
@@ -72,24 +79,24 @@ if __name__ == "__main__":
     for i in range(n_iters):
         train, test = dataset._get_train_test(i)
 
-        (X_tr, t_tr, y_tr), (y_cf_tr, mu0_tr, mu1_tr) = train
-        (X_test, t_test, y_test), (y_cf_test, mu0_test, mu1_test) = test
-        cate_test = mu1_test - mu0_test
+        X_tr, t_tr, y_tr = dataset.get_xty(train)
+        X_test, t_test, y_test = dataset.get_xty(test)
+        eval_test = dataset.get_eval(test)
 
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
             y_tr_fold = y_tr[train_idx]
             t_val_fold = t_tr[valid_idx]
             y_val_fold = y_tr[valid_idx]
-            cate_val_fold = mu1_tr[valid_idx] - mu0_tr[valid_idx]
+            eval_valid = dataset.get_eval_idx(train, valid_idx)
 
             # *** CV metrics ***
-            df_fold = evaluator.run(i+1, k+1, y_tr_fold, t_val_fold, y_val_fold, cate_val_fold)
+            df_fold = evaluator.run(i+1, k+1, y_tr_fold, t_val_fold, y_val_fold, eval_valid)
             df_val = pd.concat([df_val, df_fold], ignore_index=True)
             # ***
 
         # *** Test set metrics ***
-        df_iter = evaluator.run(i+1, -1, y_tr, t_test, y_test, cate_test)
+        df_iter = evaluator.run(i+1, -1, y_tr, t_test, y_test, eval_test)
         df_test = pd.concat([df_test, df_iter], ignore_index=True)
         # ***
 

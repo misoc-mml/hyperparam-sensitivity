@@ -82,8 +82,8 @@ class CausalForestEvaluator():
         
         return pd.DataFrame(test_results, columns=results_cols)
 
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
-        results_cols = ['iter_id', 'param_id', 'ate', 'pehe', 'ate_hat']
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']
         preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}'
 
         if fold_id > 0:
@@ -98,10 +98,9 @@ class CausalForestEvaluator():
             cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
-            test_pehe = pehe(cate_test, cate_hat)
-            test_ate = abs_ate(cate_test, cate_hat)
+            test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id, test_ate, test_pehe, ate_hat]
+            result = [iter_id, p_id] + test_metrics + [ate_hat]
 
             if fold_id > 0: result.insert(1, fold_id)
 

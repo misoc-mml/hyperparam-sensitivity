@@ -155,7 +155,7 @@ class TEvaluator():
         
         return pd.DataFrame(test_results, columns=results_cols)
 
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, cate_test):
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -168,7 +168,7 @@ class TEvaluator():
         y0_test = y_test_scaled[t_test < 1].reshape(-1, 1)
         y1_test = y_test_scaled[t_test > 0].reshape(-1, 1)
 
-        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1', 'ate', 'pehe', 'ate_hat', 'r2_score_m0', 'r2_score_m1']
+        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1'] + eval.metrics + ['ate_hat', 'r2_score_m0', 'r2_score_m1']
         preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
         preds_m1_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m1_iter{iter_id}'
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}'
@@ -203,10 +203,9 @@ class TEvaluator():
             cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
-            test_pehe = pehe(cate_test, cate_hat)
-            test_ate = abs_ate(cate_test, cate_hat)
+            test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id], test_ate, test_pehe, ate_hat, m0_r2[p0_id], m1_r2[p1_id]]
+            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id]] + test_metrics + [ate_hat, m0_r2[p0_id], m1_r2[p1_id]]
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)

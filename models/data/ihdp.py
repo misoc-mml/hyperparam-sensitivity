@@ -44,8 +44,9 @@ class IHDP(object):
         test = self.split_ihdp_dataset(self.arr_test, i)
         return train, test
 
-    def get_train(self, i):
-        return self.split_ihdp_dataset(self.arr_train, i)
+    def get_train_xt(self, i):
+        (x, t, y), _ = self.split_ihdp_dataset(self.arr_train, i)
+        return x, t
 
     def _get_batch(self, i, merge=False):
         if merge:
@@ -80,6 +81,18 @@ class IHDP(object):
         Xs[:, 13] -= 1  # this binary feature is in {1, 2}
         return (Xs, t, y), (y_cf, mu_0, mu_1)
     
+    def get_xty(self, data):
+        (x, t, y), _ = data
+        return x, t, y
+    
+    def get_eval(self, data):
+        (x, t, y), (y_cf, mu_0, mu_1) = data
+        return Evaluator(mu_0, mu_1)
+
+    def get_eval_idx(self, data, idx):
+        (x, t, y), (y_cf, mu_0, mu_1) = data
+        return Evaluator(mu_0[idx], mu_1[idx])
+
     def get_processed_data(self, merge=False):
         for i in range(self.replications):
             yield self._get_batch(i, merge)

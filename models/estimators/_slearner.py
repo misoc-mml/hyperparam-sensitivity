@@ -35,8 +35,8 @@ class SSearch():
 
             y_hat = model1.predict(Xt_test)
 
-            y0_hat = model1.predict(xt0)
-            y1_hat = model1.predict(xt1)
+            y0_hat = model1.predict(xt0).reshape(-1, 1)
+            y1_hat = model1.predict(xt1).reshape(-1, 1)
 
             if self.opt.scale_y:
                 y0_hat = scaler.inverse_transform(y0_hat)

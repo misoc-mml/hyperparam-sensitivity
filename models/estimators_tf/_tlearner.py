@@ -40,7 +40,7 @@ class TSearch():
             self._save_predictions(y0_hat, ['y_hat'], iter_id, fold_id, p0_id+1, 'm0')
 
             # For CATE prediction purposes (predict ALL X).
-            y0_hat_cate = m0.predict(X_test)
+            y0_hat_cate = m0.predict(X_test).reshape(-1, 1)
 
             if self.opt.scale_y:
                 y0_hat_cate = scaler.inverse_transform(y0_hat_cate)
@@ -59,7 +59,7 @@ class TSearch():
             self._save_predictions(y1_hat, ['y_hat'], iter_id, fold_id, p1_id+1, 'm1')
 
             # For CATE prediction purposes (predict ALL X).
-            y1_hat_cate = m1.predict(X_test)
+            y1_hat_cate = m1.predict(X_test).reshape(-1, 1)
 
             if self.opt.scale_y:
                 y1_hat_cate = scaler.inverse_transform(y1_hat_cate)

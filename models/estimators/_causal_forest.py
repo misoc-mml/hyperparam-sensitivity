@@ -5,8 +5,7 @@ from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 from econml.grf import CausalForest
 
-from ._common import get_params
-from helpers.metrics import pehe, abs_ate
+from ._common import get_params, plugin_score, r_score
 from helpers.utils import get_params_df
 
 class CausalForestSearch():
@@ -46,41 +45,12 @@ class CausalForestEvaluator():
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_params.csv'))
 
     def rscore(self, iter_id, fold_id, scorer):
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
-        preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
-
-        test_results = []
-        for p_id in self.df_params['id']:
-            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
-            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
-
-            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
-            score = scorer.score(iter_id, fold_id, cate_hat)
-
-            result = [iter_id, fold_id, p_id, score]
-            test_results.append(result)
-        
-        return pd.DataFrame(test_results, columns=results_cols)
+        filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
+        return r_score(self, iter_id, fold_id, scorer, filename_base)
 
     def score_cate(self, iter_id, fold_id, plugin):
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
-        preds_filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
-
-        test_results = []
-        for p_id in self.df_params['id']:
-            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
-            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
-
-            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
-            cate_test = plugin.get_cate(iter_id, fold_id)
-
-            test_pehe = pehe(cate_test, cate_hat)
-            test_ate = abs_ate(cate_test, cate_hat)
-
-            result = [iter_id, fold_id, p_id, test_ate, test_pehe]
-            test_results.append(result)
-        
-        return pd.DataFrame(test_results, columns=results_cols)
+        filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
+        return plugin_score(self, iter_id, fold_id, plugin, filename_base)
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']

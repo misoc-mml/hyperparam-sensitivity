@@ -10,7 +10,7 @@ import argparse
 
 from helpers.utils import init_logger
 from helpers.data import get_scaler
-from models.estimators import SSearch, TSearch, CausalForestSearch
+from models.estimators import SSearch, TSearch, DRSearch, CausalForestSearch
 from models.data import IHDP, JOBS, TWINS, NEWS
 
 def get_parser():
@@ -27,10 +27,11 @@ def get_parser():
     parser.add_argument('--scaler', type=str, choices=['minmax', 'std'], default='std')
     parser.add_argument('--scale_y', action='store_true')
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--icv', dest='inner_cv', type=int, default=5)
 
     # Estimation
-    # Consider adding: XL, DR, DML, IPSW
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'cf'], default='sl')
+    # Consider adding: XL, DML, IPSW
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='l1')
 
     return parser
@@ -40,6 +41,8 @@ def get_model(opt):
         return SSearch(opt)
     elif opt.estimation_model == 'tl':
         return TSearch(opt)
+    elif opt.estimation_model == 'dr':
+        return DRSearch(opt)
     elif opt.estimation_model == 'cf':
         return CausalForestSearch(opt)
     else:

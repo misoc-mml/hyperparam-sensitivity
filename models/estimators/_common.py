@@ -10,6 +10,7 @@ from catboost import CatBoostRegressor, CatBoostClassifier
 from lightgbm import LGBMRegressor, LGBMClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
+from econml.sklearn_extensions.linear_model import WeightedLasso
 
 from helpers.metrics import abs_ate, pehe
 
@@ -56,6 +57,13 @@ def get_params(name):
                 'min_samples_leaf': list(np.arange(1, 10)) + list(np.arange(0.01, 0.06, 0.01))}
     else:
         raise ValueError("Unrecognised 'get_params' key.")
+
+def get_weighted_regressor(name, seed=1, n_jobs=-1):
+    if name == 'l1':
+        # LassoLars doesn't support sample weights, so use WeightedLasso instead.
+        return WeightedLasso(random_state=seed)
+    else:
+        return get_regressor(name, seed, n_jobs)
 
 def get_regressor(name, seed=1, n_jobs=-1):
     if name == 'l1':

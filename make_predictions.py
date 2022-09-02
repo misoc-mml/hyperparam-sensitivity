@@ -10,7 +10,7 @@ import argparse
 
 from helpers.utils import init_logger
 from helpers.data import get_scaler
-from models.estimators import SSearch, TSearch, DRSearch, DMLSearch, CausalForestSearch
+from models.estimators import SSearch, TSearch, DRSearch, DMLSearch, IPSWSearch, CausalForestSearch
 from models.data import IHDP, JOBS, TWINS, NEWS
 
 def get_parser():
@@ -30,8 +30,8 @@ def get_parser():
     parser.add_argument('--icv', dest='inner_cv', type=int, default=5)
 
     # Estimation
-    # Consider adding: XL, DML, IPSW
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'dml', 'cf'], default='sl')
+    # Consider adding: XL, IPSW
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'dml', 'ipsw', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='l1')
 
     return parser
@@ -45,6 +45,8 @@ def get_model(opt):
         return DRSearch(opt)
     elif opt.estimation_model == 'dml':
         return DMLSearch(opt)
+    elif opt.estimation_model == 'ipsw':
+        return IPSWSearch(opt)
     elif opt.estimation_model == 'cf':
         return CausalForestSearch(opt)
     else:

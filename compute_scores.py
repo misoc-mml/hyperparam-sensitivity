@@ -10,7 +10,7 @@ import argparse
 import pandas as pd
 
 from helpers.utils import init_logger, get_model_name
-from models.estimators import SEvaluator, TEvaluator, DREvaluator, DMLEvaluator, CausalForestEvaluator
+from models.estimators import SEvaluator, TEvaluator, DREvaluator, DMLEvaluator, IPSWEvaluator, CausalForestEvaluator
 from models.scorers import PluginScorer, RScorerEvaluator
 
 def get_parser():
@@ -25,7 +25,7 @@ def get_parser():
     parser.add_argument('--seed', type=int, default=1)
 
     # Estimation
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'dml', 'two-head', 'cf'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'dml', 'ipsw', 'two-head', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='l1')
     parser.add_argument('--st', type=str, dest='scorer_type', choices=['plugin', 'r_score'], default='plugin')
     parser.add_argument('--sn', type=str, dest='scorer_name')
@@ -49,6 +49,8 @@ def get_evaluator(opt):
         return DREvaluator(opt)
     elif opt.estimation_model == 'dml':
         return DMLEvaluator(opt)
+    elif opt.estimation_model == 'ipsw':
+        return IPSWEvaluator(opt)
     elif opt.estimation_model == 'cf':
         return CausalForestEvaluator(opt)
     else:

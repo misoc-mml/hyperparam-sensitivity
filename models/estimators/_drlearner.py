@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.model_selection import ParameterGrid
+from sklearn.model_selection import ParameterGrid, GridSearchCV
 from econml.dr import DRLearner
 
 from ._common import get_params, get_regressor, get_classifier, plugin_score, r_score
@@ -39,8 +39,10 @@ class DRSearch():
                 model_prop = clone(self.m_prop)
                 model_prop.set_params(**p_prop)
 
-                # Use the same regressor for 'model_final' to reduce search space.
-                dr = DRLearner(model_propensity=model_prop, model_regression=model_reg, model_final=model_reg, cv=self.opt.inner_cv, random_state=self.opt.seed)
+                # Tune 'model_final' but not part of full exploration.
+                model_final = GridSearchCV(get_regressor(self.opt.base_model), get_params(self.opt.base_model), cv=self.opt.inner_cv)
+
+                dr = DRLearner(model_propensity=model_prop, model_regression=model_reg, model_final=model_final, cv=self.opt.inner_cv, random_state=self.opt.seed)
                 dr.fit(y_tr, t_tr, X=X_tr)
 
                 score_reg = np.mean(dr.nuisance_scores_regression)

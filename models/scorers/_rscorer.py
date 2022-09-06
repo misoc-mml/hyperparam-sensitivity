@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 # This is just to fix the import error related to RScorer.
 from econml.dml import CausalForestDML
@@ -7,6 +8,7 @@ from sklearn.model_selection import GridSearchCV
 
 from models.estimators._common import get_params, get_regressor, get_classifier
 from helpers.metrics import rscore
+from helpers.utils import get_model_name
 
 class RScorerWrapper():
     def __init__(self, opt):
@@ -29,10 +31,23 @@ class RScorerEvaluator():
     def __init__(self, opt):
         self.opt = opt
         self.df_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores.csv'))
-    
-    def score(self, iter_id, fold_id, cate_hat):
+
+    def score(self, est, iter_id, fold_id):
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}'
+
+        preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
+
         base_score = float(self.df_base_scores.loc[(self.df_base_scores['iter_id'] == iter_id) & (self.df_base_scores['fold_id'] == fold_id), 'base_score'])
+        res = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}'), allow_pickle=True)
 
-        df_res = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}.csv'))
+        test_results = []
+        for p_id in est.df_params['id']:
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            
+            _score = rscore(cate_hat, res['y_res'], res['t_res'], base_score)
 
-        return rscore(cate_hat, df_res['y_res'].to_numpy(), df_res['t_res'].to_numpy(), base_score)
+            result = [iter_id, fold_id, p_id, _score]
+            test_results.append(result)
+        
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
+        return pd.DataFrame(test_results, columns=results_cols)

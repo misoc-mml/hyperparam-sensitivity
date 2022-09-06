@@ -100,5 +100,5 @@ if __name__ == "__main__":
 
             cate_preds = model.run(X_val_fold, t_val_fold, y_val_fold)
 
-            pd.DataFrame(cate_preds, columns=['cate_hat']).to_csv(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_iter{i+1}_fold{k+1}.csv'), index=False)
+            np.savez_compressed(os.path.join(options.output_path, f'{options.estimation_model}_{options.base_model}_iter{i+1}_fold{k+1}'), cate_hat=cate_preds)
 

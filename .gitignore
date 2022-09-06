@@ -131,3 +131,4 @@ dmypy.json
 results/*/*.zip
 results/*/*/
 scripts/catboost_info
+datasets/

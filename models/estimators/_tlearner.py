@@ -5,7 +5,7 @@ from sklearn.base import clone
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import r2_score
 
-from ._common import get_params, get_regressor, plugin_score, r_score
+from ._common import get_params, get_regressor
 from helpers.data import get_scaler
 from helpers.metrics import mse
 from helpers.utils import get_params_df
@@ -34,6 +34,7 @@ class TSearch():
         X1_test = X_test[t_test > 0]
 
         # *** Model y0 ***
+        y0_hats = []
         y0_hat_cates = []
         for p0_id, p0 in enumerate(ParameterGrid(self.params0)):
             m0 = clone(self.model0)
@@ -43,7 +44,7 @@ class TSearch():
 
             # Factual predictions for model selection purposes (predict X[t==0]).
             y0_hat = m0.predict(X0_test)
-            self._save_predictions(y0_hat, ['y_hat'], iter_id, fold_id, p0_id+1, 'm0')
+            y0_hats.append(y0_hat)
 
             # For CATE prediction purposes (predict ALL X).
             y0_hat_cate = m0.predict(X_test).reshape(-1, 1)
@@ -55,6 +56,7 @@ class TSearch():
         # ***
 
         # *** Model y1 ***
+        y1_hats = []
         y1_hat_cates = []
         for p1_id, p1 in enumerate(ParameterGrid(self.params1)):
             m1 = clone(self.model1)
@@ -63,7 +65,7 @@ class TSearch():
             m1.fit(X1_tr, y1_tr)
             # Factual predictions for model selection purposes (predict X[t==1]).
             y1_hat = m1.predict(X1_test)
-            self._save_predictions(y1_hat, ['y_hat'], iter_id, fold_id, p1_id+1, 'm1')
+            y1_hats.append(y1_hat)
 
             # For CATE prediction purposes (predict ALL X).
             y1_hat_cate = m1.predict(X_test).reshape(-1, 1)
@@ -75,13 +77,23 @@ class TSearch():
         # ***
 
         # *** CATE estimator ***
-        p_global_id = 1
+        cate_hats = []
         for p0_id, p0 in enumerate(ParameterGrid(self.params0)):
             for p1_id, p1 in enumerate(ParameterGrid(self.params1)):
                 cate_hat = y1_hat_cates[p1_id] - y0_hat_cates[p0_id]
-                self._save_predictions(cate_hat, ['cate_hat'], iter_id, fold_id, p_global_id, 'cate')
-                p_global_id += 1
+                cate_hats.append(cate_hat)
         # ***
+
+        if fold_id > 0:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
+        else:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, filename), y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)
 
     def save_params_info(self):
         # Individual (id, params) pairs per model.
@@ -101,30 +113,12 @@ class TSearch():
         df_p1.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'), index=False)
         df_all.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'), index=False)
 
-    def _save_predictions(self, preds, cols, iter_id, fold_id, param_id, model):
-        filename = f'{self.opt.estimation_model}_{self.opt.base_model}_{model}_iter{iter_id}'
-
-        if fold_id > 0:
-            filename += f'_fold{fold_id}'
-
-        filename += f'_param{param_id}.csv'
-
-        pd.DataFrame(preds, columns=cols).to_csv(os.path.join(self.opt.output_path, filename), index=False)
-
 class TEvaluator():
     def __init__(self, opt):
         self.opt = opt
         self.df_m0_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m0_params.csv'))
         self.df_m1_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'))
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
-
-    def rscore(self, iter_id, fold_id, scorer):
-        filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}_fold{fold_id}'
-        return r_score(self, iter_id, fold_id, scorer, filename_base)
-
-    def score_cate(self, iter_id, fold_id, plugin):
-        filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}_fold{fold_id}'
-        return plugin_score(self, iter_id, fold_id, plugin, filename_base)
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if self.opt.scale_y:
@@ -140,38 +134,29 @@ class TEvaluator():
         y1_test = y_test_scaled[t_test > 0].reshape(-1, 1)
 
         results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1'] + eval.metrics + ['ate_hat', 'r2_score_m0', 'r2_score_m1']
-        preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
-        preds_m1_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m1_iter{iter_id}'
-        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}'
-
+        
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
         if fold_id > 0:
-            preds_m0_filename_base += f'_fold{fold_id}'
-            preds_m1_filename_base += f'_fold{fold_id}'
             preds_cate_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')
+        
+        preds = np.load(os.path.join(self.opt.results_path, preds_cate_filename_base), allow_pickle=True)
 
         m0_mse = {}
         m0_r2 = {}
         for p0_id in self.df_m0_params['id']:
-            preds_m0_filename = f'{preds_m0_filename_base}_param{p0_id}.csv'
-            df_m0 = pd.read_csv(os.path.join(self.opt.results_path, preds_m0_filename))
-            m0_mse[p0_id] = mse(df_m0['y_hat'].to_numpy().reshape(-1, 1), y0_test)
-            m0_r2[p0_id] = r2_score(y0_test, df_m0['y_hat'].to_numpy().reshape(-1, 1))
+            m0_mse[p0_id] = mse(preds['y0_hat'][p0_id-1].reshape(-1, 1), y0_test)
+            m0_r2[p0_id] = r2_score(y0_test, preds['y0_hat'][p0_id-1].reshape(-1, 1))
         
         m1_mse = {}
         m1_r2 = {}
         for p1_id in self.df_m1_params['id']:
-            preds_m1_filename = f'{preds_m1_filename_base}_param{p1_id}.csv'
-            df_m1 = pd.read_csv(os.path.join(self.opt.results_path, preds_m1_filename))
-            m1_mse[p1_id] = mse(df_m1['y_hat'].to_numpy().reshape(-1, 1), y1_test)
-            m1_r2[p1_id] = r2_score(y1_test, df_m1['y_hat'].to_numpy().reshape(-1, 1))
+            m1_mse[p1_id] = mse(preds['y1_hat'][p1_id-1].reshape(-1, 1), y1_test)
+            m1_r2[p1_id] = r2_score(y1_test, preds['y1_hat'][p1_id-1].reshape(-1, 1))
 
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
-            preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
-            df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
-
-            cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)

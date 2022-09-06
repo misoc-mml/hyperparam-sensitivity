@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
@@ -29,6 +30,7 @@ class TSearch():
         input_size = X0_tr.shape[1]
 
         # *** Model y0 ***
+        y0_hats = []
         y0_hat_cates = []
         for p0_id, p0 in enumerate(ParameterGrid(self.params0)):
             m0 = get_mlp_reg(input_size, p0)
@@ -37,7 +39,7 @@ class TSearch():
 
             # Factual predictions for model selection purposes (predict X[t==0]).
             y0_hat = m0.predict(X0_test)
-            self._save_predictions(y0_hat, ['y_hat'], iter_id, fold_id, p0_id+1, 'm0')
+            y0_hats.append(y0_hat)
 
             # For CATE prediction purposes (predict ALL X).
             y0_hat_cate = m0.predict(X_test).reshape(-1, 1)
@@ -49,6 +51,7 @@ class TSearch():
         # ***
 
         # *** Model y1 ***
+        y1_hats = []
         y1_hat_cates = []
         for p1_id, p1 in enumerate(ParameterGrid(self.params1)):
             m1 = get_mlp_reg(input_size, p1)
@@ -56,7 +59,7 @@ class TSearch():
             m1.fit(X1_tr, y1_tr)
             # Factual predictions for model selection purposes (predict X[t==1]).
             y1_hat = m1.predict(X1_test)
-            self._save_predictions(y1_hat, ['y_hat'], iter_id, fold_id, p1_id+1, 'm1')
+            y1_hats.append(y1_hat)
 
             # For CATE prediction purposes (predict ALL X).
             y1_hat_cate = m1.predict(X_test).reshape(-1, 1)
@@ -68,13 +71,23 @@ class TSearch():
         # ***
 
         # *** CATE estimator ***
-        p_global_id = 1
+        cate_hats = []
         for p0_id, p0 in enumerate(ParameterGrid(self.params0)):
             for p1_id, p1 in enumerate(ParameterGrid(self.params1)):
                 cate_hat = y1_hat_cates[p1_id] - y0_hat_cates[p0_id]
-                self._save_predictions(cate_hat, ['cate_hat'], iter_id, fold_id, p_global_id, 'cate')
-                p_global_id += 1
+                cate_hats.append(cate_hat)
         # ***
+
+        if fold_id > 0:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
+        else:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, filename), y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)
 
     def save_params_info(self):
         # Individual (id, params) pairs per model.
@@ -93,13 +106,3 @@ class TSearch():
         df_p0.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m0_params.csv'), index=False)
         df_p1.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'), index=False)
         df_all.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'), index=False)
-
-    def _save_predictions(self, preds, cols, iter_id, fold_id, param_id, model):
-        filename = f'{self.opt.estimation_model}_{self.opt.base_model}_{model}_iter{iter_id}'
-
-        if fold_id > 0:
-            filename += f'_fold{fold_id}'
-
-        filename += f'_param{param_id}.csv'
-
-        pd.DataFrame(preds, columns=cols).to_csv(os.path.join(self.opt.output_path, filename), index=False)

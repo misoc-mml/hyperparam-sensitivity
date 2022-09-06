@@ -9,6 +9,8 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from joblib import Parallel
 
 from helpers.fixes import delayed
+from helpers.metrics import abs_ate, pehe
+from helpers.utils import get_model_name
 
 def _fit_and_predict(estimator, X, t, y, train, test):
     estimator.fit(y[train], t[train], X=X[train])
@@ -87,5 +89,24 @@ class PluginScorer():
         self.opt = opt
     
     def get_cate(self, iter, fold):
-        df = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}.csv'))
-        return df['cate_hat'].to_numpy().reshape(-1, 1)
+        arr = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}'), allow_pickle=True)
+        return arr['cate_hat'].reshape(-1, 1)
+    
+    def score(self, est, iter_id, fold_id):
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}'
+
+        preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
+        cate_test = self.get_cate(iter_id, fold_id)
+
+        test_results = []
+        for p_id in est.df_params['id']:
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            result = [iter_id, fold_id, p_id, test_ate, test_pehe]
+            test_results.append(result)
+        
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
+        return pd.DataFrame(test_results, columns=results_cols)

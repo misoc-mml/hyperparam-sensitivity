@@ -94,8 +94,7 @@ if __name__ == "__main__":
 
             (Y_res, T_res), base_score = scorer.run(X_val_fold, t_val_fold, y_val_fold)
 
-            pd.DataFrame(data={'y_res': Y_res.flatten(), 't_res': T_res.flatten()}).to_csv(os.path.join(options.output_path, f'rs_{options.base_model}_iter{i+1}_fold{k+1}.csv'), index=False)
-
+            np.savez_compressed(os.path.join(options.output_path, f'rs_{options.base_model}_iter{i+1}_fold{k+1}'), y_res=Y_res, t_res=T_res)
             base_scores.append([i+1, k+1, base_score])
     
     pd.DataFrame(base_scores, columns=base_scores_cols).to_csv(os.path.join(options.output_path, f'rs_{options.base_model}_base_scores.csv'), index=False)

@@ -6,7 +6,7 @@ from sklearn.model_selection import ParameterGrid
 from sklearn.linear_model import ElasticNetCV
 from econml.dml import DML
 
-from ._common import get_params, get_regressor, get_classifier, plugin_score, r_score
+from ._common import get_params, get_regressor, get_classifier
 from helpers.utils import get_params_df
 
 class DMLSearch():
@@ -30,8 +30,8 @@ class DMLSearch():
         else:
             base_filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
 
-        global_id = 1
         scores = []
+        cate_hats = []
         for p_reg in ParameterGrid(self.params_reg):
             model_reg = clone(self.m_reg)
             model_reg.set_params(**p_reg)
@@ -47,15 +47,15 @@ class DMLSearch():
                 score_reg = np.mean(dml.nuisance_scores_y)
                 score_prop = np.mean(dml.nuisance_scores_t)
                 score_final = dml.score(y_test, t_test, X=X_test)
-                scores.append([global_id, score_reg, score_prop, score_final])
+                scores.append([score_reg, score_prop, score_final])
 
                 cate_hat = dml.effect(X_test)
-                    
-                pd.DataFrame(cate_hat, columns=['cate_hat']).to_csv(os.path.join(self.opt.output_path, f'{base_filename}_param{global_id}.csv'), index=False)
-                    
-                global_id += 1
-        
-        pd.DataFrame(scores, columns=['id', 'score_reg', 'score_prop', 'score_final']).to_csv(os.path.join(self.opt.output_path, f'{base_filename}_scores.csv'), index=False)
+                cate_hats.append(cate_hat)
+
+        scores_arr = np.array(scores)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, base_filename), cate_hat=cate_hats_arr, scores=scores_arr)
     
     def save_params_info(self):
         df_reg = get_params_df(self.params_reg)
@@ -78,38 +78,30 @@ class DMLEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
     
-    def rscore(self, iter_id, fold_id, scorer):
-        filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
-        return r_score(self, iter_id, fold_id, scorer, filename_base)
-
-    def score_cate(self, iter_id, fold_id, plugin):
-        filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
-        return plugin_score(self, iter_id, fold_id, plugin, filename_base)
-    
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
-        results_cols = ['iter_id', 'param_id', 'reg_score', 'prop_score', 'final_score'] + eval.metrics + ['ate_hat']
+        results_cols = ['iter_id', 'param_id', 'ate_hat'] + eval.metrics + ['reg_score', 'prop_score', 'final_score']
         preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
 
         if fold_id > 0:
             preds_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')
         
-        df_scores = pd.read_csv(os.path.join(self.opt.results_path, f'{preds_filename_base}_scores.csv'))
+        preds = np.load(os.path.join(self.opt.results_path, preds_filename_base), allow_pickle=True)
 
         test_results = []
-        for p_id, s_reg, s_prop, s_final in zip(df_scores['id'], df_scores['score_reg'], df_scores['score_prop'], df_scores['score_final']):
-            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
-            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
-
-            cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
+        for p_id in self.df_params['id']:
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id, s_reg, s_prop, s_final] + test_metrics + [ate_hat]
+            result = [iter_id, p_id, ate_hat] + test_metrics
 
             if fold_id > 0: result.insert(1, fold_id)
 
             test_results.append(result)
         
-        return pd.DataFrame(test_results, columns=results_cols)
+        test_results_arr = np.array(test_results)
+        all_results = np.hstack((test_results_arr, preds['scores']))
+
+        return pd.DataFrame(all_results, columns=results_cols)

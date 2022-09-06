@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -36,7 +35,11 @@ class TwoHeadSearch():
 
         input_size = X_tr.shape[1]
 
-        for param_id, params in enumerate(ParameterGrid(self.params_grid)):
+        y_hats = []
+        y0_hats = []
+        y1_hats = []
+        cate_hats = []
+        for params in ParameterGrid(self.params_grid):
             model = TwoHeadNN(input_size, params['n_layers'], params['n_layers2'], params['n_units'], params['learning_rate'], params['activation'], params['dropout'], params['l2'], 'linear', params['batch_size'], params['epochs'], params['epochs_are_steps'])
 
             model.fit(X_tr, t_tr, y_tr)
@@ -50,15 +53,22 @@ class TwoHeadSearch():
             
             cate_hat = y1_hat - y0_hat
 
-            cols = ['y_hat', 'y0_hat', 'y1_hat', 'cate_hat']
-            results = np.concatenate([y_hat.reshape(-1, 1), y0_hat.reshape(-1, 1), y1_hat.reshape(-1, 1), cate_hat.reshape(-1, 1)], axis=1)
+            y_hats.append(y_hat)
+            y0_hats.append(y0_hat)
+            y1_hats.append(y1_hat)
+            cate_hats.append(cate_hat)
 
-            if fold_id > 0:
-                filename = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}_param{param_id+1}.csv'
-            else:
-                filename = f'{self.opt.estimation_model}_iter{iter_id}_param{param_id+1}.csv'
+        if fold_id > 0:
+            filename = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
+        else:
+            filename = f'{self.opt.estimation_model}_iter{iter_id}'
+        
+        y_hats_arr = np.array(y_hats, dtype=object)
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
 
-            pd.DataFrame(results, columns=cols).to_csv(os.path.join(self.opt.output_path, filename), index=False)
+        np.savez_compressed(os.path.join(self.opt.output_path, filename), y_hat=y_hats_arr, y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)
         
     def save_params_info(self):
         df_params = get_params_df(self.params_grid)

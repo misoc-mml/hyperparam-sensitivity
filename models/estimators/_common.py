@@ -1,6 +1,4 @@
-import os
 import numpy as np
-import pandas as pd
 
 from sklearn.linear_model import Ridge, LassoLars, TweedieRegressor, RidgeClassifier
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
@@ -11,8 +9,6 @@ from lightgbm import LGBMRegressor, LGBMClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
 from econml.sklearn_extensions.linear_model import WeightedLasso
-
-from helpers.metrics import abs_ate, pehe
 
 class RidgeClassifier(Ridge):
     def predict_proba(self, X):
@@ -108,38 +104,3 @@ def get_classifier(name, seed=1, n_jobs=-1):
         return LGBMClassifier(n_estimators=1000, random_state=seed, n_jobs=n_jobs)
     else:
         raise ValueError("Unrecognised 'get_classifier' key.")
-    
-def plugin_score(model, iter_id, fold_id, plugin, filename):
-    results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
-
-    test_results = []
-    for p_id in model.df_params['id']:
-        preds_cate_filename = f'{filename}_param{p_id}.csv'
-        df_cate = pd.read_csv(os.path.join(model.opt.results_path, preds_cate_filename))
-
-        cate_hat = df_cate['cate_hat'].to_numpy().reshape(-1, 1)
-        cate_test = plugin.get_cate(iter_id, fold_id)
-
-        test_pehe = pehe(cate_test, cate_hat)
-        test_ate = abs_ate(cate_test, cate_hat)
-
-        result = [iter_id, fold_id, p_id, test_ate, test_pehe]
-        test_results.append(result)
-        
-    return pd.DataFrame(test_results, columns=results_cols)
-
-def r_score(model, iter_id, fold_id, scorer, filename):
-    results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
-
-    test_results = []
-    for p_id in model.df_params['id']:
-        preds_filename = f'{filename}_param{p_id}.csv'
-        df_preds = pd.read_csv(os.path.join(model.opt.results_path, preds_filename))
-
-        cate_hat = df_preds['cate_hat'].to_numpy().reshape(-1, 1)
-        score = scorer.score(iter_id, fold_id, cate_hat)
-
-        result = [iter_id, fold_id, p_id, score]
-        test_results.append(result)
-        
-    return pd.DataFrame(test_results, columns=results_cols)

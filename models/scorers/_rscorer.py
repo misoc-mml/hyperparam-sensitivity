@@ -51,3 +51,15 @@ class RScorerEvaluator():
         
         results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
         return pd.DataFrame(test_results, columns=results_cols)
+
+class RScorerConverter():
+    def __init__(self, opt):
+        self.opt = opt
+    
+    def convert(self, iter_id, fold_id):
+        df = pd.read_csv(os.path.join(self.opt.results_path, f'rs_{self.opt.base_model}_iter{iter_id}_fold{fold_id}.csv'))
+
+        y_res = df['y_res'].to_numpy().reshape(-1, 1)
+        t_res = df['t_res'].to_numpy().reshape(-1, 1)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, f'rs_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'), y_res=y_res, t_res=t_res)

@@ -124,6 +124,37 @@ class SEvaluator():
         
         return pd.DataFrame(test_results, columns=results_cols)
 
+class SConverter():
+    def __init__(self, opt):
+        self.opt = opt
+        self.model_name = get_model_name(opt)
+        self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.model_name}_params.csv'))
+    
+    def convert(self, iter_id, fold_id):
+        preds_filename_base = f'{self.model_name}_iter{iter_id}'
+        if fold_id > 0:
+            preds_filename_base += f'_fold{fold_id}'
+        
+        y_hats = []
+        y0_hats = []
+        y1_hats = []
+        cate_hats = []
+        for p_id in self.df_params['id']:
+            preds_filename = f'{preds_filename_base}_param{p_id}.csv'
+            df_preds = pd.read_csv(os.path.join(self.opt.results_path, preds_filename))
+
+            y_hats.append(df_preds['y_hat'].to_numpy().reshape(-1, 1))
+            y0_hats.append(df_preds['y0_hat'].to_numpy().reshape(-1, 1))
+            y1_hats.append(df_preds['y1_hat'].to_numpy().reshape(-1, 1))
+            cate_hats.append(df_preds['cate_hat'].to_numpy().reshape(-1, 1))
+        
+        y_hats_arr = np.array(y_hats, dtype=object)
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, preds_filename_base), y_hat=y_hats_arr, y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)
+
 class SDebug():
     def __init__(self, opt):
         self.opt = opt

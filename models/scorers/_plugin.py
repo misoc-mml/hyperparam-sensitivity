@@ -110,3 +110,11 @@ class PluginScorer():
         
         results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
         return pd.DataFrame(test_results, columns=results_cols)
+
+class PluginConverter():
+    def __init__(self, opt):
+        self.opt = opt
+    
+    def convert(self, iter_id, fold_id):
+        df = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}.csv'))
+        np.savez_compressed(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'), cate_hat=df['cate_hat'].to_numpy().reshape(-1, 1))

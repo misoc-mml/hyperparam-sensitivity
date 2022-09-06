@@ -167,3 +167,44 @@ class TEvaluator():
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
+
+class TConverter():
+    def __init__(self, opt):
+        self.opt = opt
+        self.df_m0_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m0_params.csv'))
+        self.df_m1_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'))
+        self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
+    
+    def convert(self, iter_id, fold_id):
+        preds_m0_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m0_iter{iter_id}'
+        preds_m1_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_m1_iter{iter_id}'
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_cate_iter{iter_id}'
+
+        if fold_id > 0:
+            preds_m0_filename_base += f'_fold{fold_id}'
+            preds_m1_filename_base += f'_fold{fold_id}'
+            preds_cate_filename_base += f'_fold{fold_id}'
+        
+        y0_hats = []
+        for p0_id in self.df_m0_params['id']:
+            preds_m0_filename = f'{preds_m0_filename_base}_param{p0_id}.csv'
+            df_m0 = pd.read_csv(os.path.join(self.opt.results_path, preds_m0_filename))
+            y0_hats.append(df_m0['y_hat'].to_numpy().reshape(-1, 1))
+        
+        y1_hats = []
+        for p1_id in self.df_m1_params['id']:
+            preds_m1_filename = f'{preds_m1_filename_base}_param{p1_id}.csv'
+            df_m1 = pd.read_csv(os.path.join(self.opt.results_path, preds_m1_filename))
+            y1_hats.append(df_m1['y_hat'].to_numpy().reshape(-1, 1))
+        
+        cate_hats = []
+        for p_id in self.df_params['id']:
+            preds_cate_filename = f'{preds_cate_filename_base}_param{p_id}.csv'
+            df_cate = pd.read_csv(os.path.join(self.opt.results_path, preds_cate_filename))
+            cate_hats.append(df_cate['cate_hat'].to_numpy().reshape(-1, 1))
+        
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, preds_cate_filename_base), y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)

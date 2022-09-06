@@ -1,0 +1,1 @@
+python ../convert_preds.py --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters 10 --results_path ../results/predictions -o ../results/predictions --em sl --bm l1 --mt est

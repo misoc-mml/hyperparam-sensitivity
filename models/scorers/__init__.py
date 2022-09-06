@@ -1,2 +1,2 @@
-from ._plugin import SPlugin, TPlugin, PluginScorer
-from ._rscorer import RScorerWrapper, RScorerEvaluator
+from ._plugin import SPlugin, TPlugin, PluginScorer, PluginConverter
+from ._rscorer import RScorerWrapper, RScorerEvaluator, RScorerConverter

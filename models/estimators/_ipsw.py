@@ -96,7 +96,7 @@ class IPSWSearch():
         params_mapping = []
         for prop_id, _ in enumerate(ParameterGrid(self.params_prop)):
             for reg_id, _ in enumerate(ParameterGrid(self.params_reg)):
-                params_mapping.append([p_global_id, prop_id, reg_id])
+                params_mapping.append([p_global_id, prop_id+1, reg_id+1])
                 p_global_id += 1
         df_all = pd.DataFrame(params_mapping, columns=['id', 'prop', 'reg'])
 

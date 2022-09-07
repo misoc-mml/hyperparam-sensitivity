@@ -13,16 +13,19 @@ from econml.sklearn_extensions.linear_model import WeightedLasso
 class RidgeClassifier(Ridge):
     def predict_proba(self, X):
         p = self.predict(X).reshape(-1, 1)
+        p = np.clip(p, 0, 1)
         return np.concatenate([1 - p, p], axis=1)
 
 class LassoLarsClassifier(LassoLars):
     def predict_proba(self, X):
         p = self.predict(X).reshape(-1, 1)
+        p = np.clip(p, 0, 1)
         return np.concatenate([1 - p, p], axis=1)
 
 class KernelRidgeClassifier(KernelRidge):
     def predict_proba(self, X):
         p = self.predict(X).reshape(-1, 1)
+        p = np.clip(p, 0, 1)
         return np.concatenate([1 - p, p], axis=1)
 
 def get_params(name):

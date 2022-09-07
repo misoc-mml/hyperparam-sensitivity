@@ -7,17 +7,17 @@ out_dir = './tables'
 
 meta_models = ['sl', 'tl']
 base_models = ['l1', 'l2', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm']
-standalone_cate_models = ['cf']
+standalone_cate_models = ['cf', 'sl_mlp', 'tl_mlp']
 all_cate_models = [f'{mm}_{bm}' for mm in meta_models for bm in base_models] + standalone_cate_models
-base_metrics_dir = '../results/metrics/run2/'
+base_metrics_dir = '../results/metrics/'
 
 plugin_meta_models = ['sl', 'tl']
 plugin_base_models = ['dt', 'lgbm', 'cb']
 plugin_models = [f'{pmm}_{pbm}' for pmm in plugin_meta_models for pbm in plugin_base_models]
-plugin_dir = '../results/scores/run1/'
+plugin_dir = '../results/scores/'
 
 rscore_base_models = ['dt', 'lgbm', 'cb']
-rscore_dir = '../results/scores/run1/'
+rscore_dir = '../results/scores/'
 
 datasets = ['ihdp']
 all_metrics = {'ihdp': ['ate', 'pehe'], 'jobs': ['att', 'policy'], 'news': ['ate', 'pehe'], 'twins': ['ate', 'pehe']}

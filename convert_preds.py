@@ -13,7 +13,7 @@ def get_parser():
     parser.add_argument('--skip_iter', type=int, default=0)
     parser.add_argument('--results_path', type=str)
     parser.add_argument('-o', type=str, dest='output_path', default='./')
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'cf'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'cf', 'rs'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='l1')
     parser.add_argument('--mt', dest='model_type', type=str, choices=['est', 'plugin', 'rscorer'], default='est')
 
@@ -61,4 +61,6 @@ if __name__ == "__main__":
         for k, _ in enumerate(splits['train'][i]):
             model.convert(i+1, k+1)
         
-        model.convert(i+1, -1)
+        # Test set predictions
+        if options.model_type == 'est':
+            model.convert(i+1, -1)

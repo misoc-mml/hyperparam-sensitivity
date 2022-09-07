@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 
-from models.estimators import SConverter, TConverter
+from models.estimators import SConverter, TConverter, CausalForestConverter
 from models.scorers import PluginConverter, RScorerConverter
 
 def get_parser():
@@ -13,8 +13,8 @@ def get_parser():
     parser.add_argument('--skip_iter', type=int, default=0)
     parser.add_argument('--results_path', type=str)
     parser.add_argument('-o', type=str, dest='output_path', default='./')
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl'], default='sl')
-    parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='l1')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'cf'], default='sl')
+    parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='l1')
     parser.add_argument('--mt', dest='model_type', type=str, choices=['est', 'plugin', 'rscorer'], default='est')
 
     return parser
@@ -25,6 +25,8 @@ def get_model(opt):
             return SConverter(opt)
         elif opt.estimation_model == 'tl':
             return TConverter(opt)
+        elif opt.estimation_model == 'cf':
+            return CausalForestConverter(opt)
         else:
             raise ValueError('Unknown estimation model selected.')
     elif opt.model_type == 'plugin':
@@ -58,3 +60,5 @@ if __name__ == "__main__":
         # CV iterations
         for k, _ in enumerate(splits['train'][i]):
             model.convert(i+1, k+1)
+        
+        model.convert(i+1, -1)

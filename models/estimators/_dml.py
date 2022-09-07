@@ -41,7 +41,7 @@ class DMLSearch():
                 model_prop.set_params(**p_prop)
 
                 # Tune 'model_final' but not part of full exploration.
-                dml = DML(model_y=model_reg, model_t=model_prop, model_final=ElasticNetCV(fit_intercept=False, cv=self.opt.inner_cv, random_state=self.opt.seed), discrete_treatment=True, cv=self.opt.inner_cv, random_state=self.opt.seed)
+                dml = DML(model_y=model_reg, model_t=model_prop, model_final=ElasticNetCV(fit_intercept=False, cv=self.opt.inner_cv, random_state=self.opt.seed, n_jobs=-1), discrete_treatment=True, cv=self.opt.inner_cv, random_state=self.opt.seed)
                 dml.fit(y_tr, t_tr, X=X_tr)
 
                 score_reg = np.mean(dml.nuisance_scores_y)

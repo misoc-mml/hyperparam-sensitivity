@@ -40,7 +40,7 @@ class DRSearch():
                 model_prop.set_params(**p_prop)
 
                 # Tune 'model_final' but not part of full exploration.
-                model_final = GridSearchCV(get_regressor(self.opt.base_model), get_params(self.opt.base_model), cv=self.opt.inner_cv)
+                model_final = GridSearchCV(get_regressor(self.opt.base_model), get_params(self.opt.base_model), cv=self.opt.inner_cv, n_jobs=-1)
 
                 dr = DRLearner(model_propensity=model_prop, model_regression=model_reg, model_final=model_final, cv=self.opt.inner_cv, random_state=self.opt.seed)
                 dr.fit(y_tr, t_tr, X=X_tr)

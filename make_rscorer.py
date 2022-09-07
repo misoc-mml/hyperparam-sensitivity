@@ -25,7 +25,7 @@ def get_parser():
     parser.add_argument('-o', type=str, dest='output_path', default='./')
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--scaler', type=str, choices=['minmax', 'std'], default='std')
-    parser.add_argument('--cv', type=int, default=10)
+    parser.add_argument('--cv', type=int, default=5)
     parser.add_argument('--n_jobs', type=int, default=-1)
 
     # Estimation

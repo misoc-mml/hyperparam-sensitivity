@@ -11,7 +11,7 @@ from helpers.utils import get_params_df
 class CausalForestSearch():
     def __init__(self, opt):
         self.opt = opt
-        self.model = CausalForest(n_estimators=1000, random_state=opt.seed)
+        self.model = CausalForest(n_estimators=1000, random_state=opt.seed, n_jobs=-1)
         self.params_grid = get_params(opt.estimation_model)
 
     def run(self, train, test, scaler, iter_id, fold_id):

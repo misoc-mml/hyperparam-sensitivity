@@ -91,6 +91,9 @@ if __name__ == "__main__":
 
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
+            train_idx = train_idx.astype(int)
+            valid_idx = valid_idx.astype(int)
+
             y_tr_fold = y_tr[train_idx]
             t_val_fold = t_tr[valid_idx]
             y_val_fold = y_tr[valid_idx]

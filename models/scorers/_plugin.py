@@ -89,18 +89,18 @@ class PluginScorer():
         self.opt = opt
     
     def get_cate(self, iter, fold):
-        arr = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}'), allow_pickle=True)
-        return arr['cate_hat'].reshape(-1, 1)
+        arr = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}.npz'), allow_pickle=True)
+        return arr['cate_hat'].reshape(-1, 1).astype(float)
     
     def score(self, est, iter_id, fold_id):
-        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}'
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}.npz'
 
         preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
         cate_test = self.get_cate(iter_id, fold_id)
 
         test_results = []
         for p_id in est.df_params['id']:
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
 
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)

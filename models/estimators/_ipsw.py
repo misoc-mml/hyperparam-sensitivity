@@ -129,23 +129,23 @@ class IPSWEvaluator():
             preds_cate_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')
 
-        preds = np.load(os.path.join(self.opt.results_path, preds_cate_filename_base), allow_pickle=True)
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
 
         prop_mse = {}
         prop_r2 = {}
         for prop_id in self.df_prop_params['id']:
-            prop_mse[prop_id] = mse(preds['t_prob_hat'][prop_id-1].reshape(-1, 1), t_test)
-            prop_r2[prop_id] = r2_score(t_test, preds['t_prob_hat'][prop_id-1].reshape(-1, 1))
+            prop_mse[prop_id] = mse(preds['t_prob_hat'][prop_id-1].reshape(-1, 1).astype(float), t_test)
+            prop_r2[prop_id] = r2_score(t_test, preds['t_prob_hat'][prop_id-1].reshape(-1, 1).astype(float))
         
         test_results = []
         for p_id, prop_id in zip(self.df_params['id'], self.df_params['prop']):
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)
 
             # Scaled MSE (y_hat is scaled).
-            y_hat = preds['y_hat'][p_id-1].reshape(-1, 1)
+            y_hat = preds['y_hat'][p_id-1].reshape(-1, 1).astype(float)
             reg_mse = mse(y_hat, y_test_scaled)
             reg_r2 = r2_score(y_test_scaled, y_hat)
 

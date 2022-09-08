@@ -140,23 +140,23 @@ class TEvaluator():
             preds_cate_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')
         
-        preds = np.load(os.path.join(self.opt.results_path, preds_cate_filename_base), allow_pickle=True)
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
 
         m0_mse = {}
         m0_r2 = {}
         for p0_id in self.df_m0_params['id']:
-            m0_mse[p0_id] = mse(preds['y0_hat'][p0_id-1].reshape(-1, 1), y0_test)
-            m0_r2[p0_id] = r2_score(y0_test, preds['y0_hat'][p0_id-1].reshape(-1, 1))
+            m0_mse[p0_id] = mse(preds['y0_hat'][p0_id-1].reshape(-1, 1).astype(float), y0_test)
+            m0_r2[p0_id] = r2_score(y0_test, preds['y0_hat'][p0_id-1].reshape(-1, 1).astype(float))
         
         m1_mse = {}
         m1_r2 = {}
         for p1_id in self.df_m1_params['id']:
-            m1_mse[p1_id] = mse(preds['y1_hat'][p1_id-1].reshape(-1, 1), y1_test)
-            m1_r2[p1_id] = r2_score(y1_test, preds['y1_hat'][p1_id-1].reshape(-1, 1))
+            m1_mse[p1_id] = mse(preds['y1_hat'][p1_id-1].reshape(-1, 1).astype(float), y1_test)
+            m1_r2[p1_id] = r2_score(y1_test, preds['y1_hat'][p1_id-1].reshape(-1, 1).astype(float))
 
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)

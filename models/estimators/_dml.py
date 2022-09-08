@@ -86,11 +86,11 @@ class DMLEvaluator():
             preds_filename_base += f'_fold{fold_id}'
             results_cols.insert(1, 'fold_id')
         
-        preds = np.load(os.path.join(self.opt.results_path, preds_filename_base), allow_pickle=True)
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_filename_base}.npz'), allow_pickle=True)
 
         test_results = []
         for p_id in self.df_params['id']:
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)
@@ -102,6 +102,6 @@ class DMLEvaluator():
             test_results.append(result)
         
         test_results_arr = np.array(test_results)
-        all_results = np.hstack((test_results_arr, preds['scores']))
+        all_results = np.hstack((test_results_arr, preds['scores']).astype(float))
 
         return pd.DataFrame(all_results, columns=results_cols)

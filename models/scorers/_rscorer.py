@@ -33,16 +33,16 @@ class RScorerEvaluator():
         self.df_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores.csv'))
 
     def score(self, est, iter_id, fold_id):
-        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}'
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}.npz'
 
         preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
 
         base_score = float(self.df_base_scores.loc[(self.df_base_scores['iter_id'] == iter_id) & (self.df_base_scores['fold_id'] == fold_id), 'base_score'])
-        res = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}'), allow_pickle=True)
+        res = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}.npz'), allow_pickle=True)
 
         test_results = []
         for p_id in est.df_params['id']:
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1)
+            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
             
             _score = rscore(cate_hat, res['y_res'], res['t_res'], base_score)
 

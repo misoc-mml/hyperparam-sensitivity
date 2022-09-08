@@ -21,9 +21,9 @@ class CausalForestSearch():
         X_test = test[0]
 
         if fold_id > 0:
-            filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}_param'
+            filename_base = f'{self.opt.estimation_model}_iter{iter_id}_fold{fold_id}'
         else:
-            filename_base = f'{self.opt.estimation_model}_iter{iter_id}_param'
+            filename_base = f'{self.opt.estimation_model}_iter{iter_id}'
 
         cate_hats = []
         for params in ParameterGrid(self.params_grid):

@@ -10,7 +10,7 @@ import argparse
 
 from helpers.utils import init_logger
 from helpers.data import get_scaler
-from models.estimators import SSearch, TSearch, DRSearch, DMLSearch, IPSWSearch, CausalForestSearch
+from models.estimators import SSearch, TSearch, XSearch, DRSearch, DMLSearch, IPSWSearch, CausalForestSearch
 from models.estimators import TSSearch, DRSSearch, DMLSSearch, IPSWSSearch
 from models.data import IHDP, JOBS, TWINS, NEWS
 
@@ -32,9 +32,8 @@ def get_parser():
     parser.add_argument('--n_jobs', type=int, default=1)
 
     # Estimation
-    # Consider adding: XL
     # Models with 's' suffix refer to single-model/flat searches.
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'cf'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'xl', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='l1')
 
     return parser
@@ -46,6 +45,8 @@ def get_model(opt):
         return TSearch(opt)
     elif opt.estimation_model == 'tls':
         return TSSearch(opt)
+    elif opt.estimation_model == 'xl':
+        return XSearch(opt)
     elif opt.estimation_model == 'dr':
         return DRSearch(opt)
     elif opt.estimation_model == 'drs':

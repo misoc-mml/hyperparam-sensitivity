@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from models.data import IHDP, JOBS, TWINS, NEWS
-from models.estimators import SEvaluator, TEvaluator, DREvaluator, DMLEvaluator, IPSWEvaluator, CausalForestEvaluator
+from models.estimators import SEvaluator, TEvaluator, XEvaluator, DREvaluator, DMLEvaluator, IPSWEvaluator, CausalForestEvaluator
 from models.estimators import TSEvaluator, DRSEvaluator, DMLSEvaluator, IPSWSEvaluator
 from helpers.utils import init_logger, get_model_name
 
@@ -23,7 +23,7 @@ def get_parser():
     parser.add_argument('--scale_y', action='store_true')
 
     # Estimation
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'two-head', 'cf'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'xl', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'two-head', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='lr')
 
     return parser
@@ -35,6 +35,8 @@ def get_evaluator(opt):
         return TEvaluator(opt)
     elif opt.estimation_model == 'tls':
         return TSEvaluator(opt)
+    elif opt.estimation_model == 'xl':
+        return XEvaluator(opt)
     elif opt.estimation_model == 'dr':
         return DREvaluator(opt)
     elif opt.estimation_model == 'drs':

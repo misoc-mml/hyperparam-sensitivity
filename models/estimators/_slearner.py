@@ -13,7 +13,7 @@ from helpers.utils import get_params_df, get_model_name
 class SSearch():
     def __init__(self, opt):
         self.opt = opt
-        self.model = get_regressor(self.opt.base_model)
+        self.model = get_regressor(self.opt.base_model, n_jobs=self.opt.n_jobs)
         self.params_grid = get_params(self.opt.base_model)
     
     def run(self, train, test, scaler, iter_id, fold_id):

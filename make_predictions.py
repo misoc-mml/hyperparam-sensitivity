@@ -11,6 +11,7 @@ import argparse
 from helpers.utils import init_logger
 from helpers.data import get_scaler
 from models.estimators import SSearch, TSearch, DRSearch, DMLSearch, IPSWSearch, CausalForestSearch
+from models.estimators import TSSearch, DRSSearch, DMLSSearch, IPSWSSearch
 from models.data import IHDP, JOBS, TWINS, NEWS
 
 def get_parser():
@@ -28,10 +29,12 @@ def get_parser():
     parser.add_argument('--scale_y', action='store_true')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--icv', dest='inner_cv', type=int, default=5)
+    parser.add_argument('--n_jobs', type=int, default=1)
 
     # Estimation
-    # Consider adding: XL, IPSW
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'dr', 'dml', 'ipsw', 'cf'], default='sl')
+    # Consider adding: XL
+    # Models with 's' suffix refer to single-model/flat searches.
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm'], default='l1')
 
     return parser
@@ -41,12 +44,20 @@ def get_model(opt):
         return SSearch(opt)
     elif opt.estimation_model == 'tl':
         return TSearch(opt)
+    elif opt.estimation_model == 'tls':
+        return TSSearch(opt)
     elif opt.estimation_model == 'dr':
         return DRSearch(opt)
+    elif opt.estimation_model == 'drs':
+        return DRSSearch(opt)
     elif opt.estimation_model == 'dml':
         return DMLSearch(opt)
+    elif opt.estimation_model == 'dmls':
+        return DMLSSearch(opt)
     elif opt.estimation_model == 'ipsw':
         return IPSWSearch(opt)
+    elif opt.estimation_model == 'ipsws':
+        return IPSWSSearch(opt)
     elif opt.estimation_model == 'cf':
         return CausalForestSearch(opt)
     else:

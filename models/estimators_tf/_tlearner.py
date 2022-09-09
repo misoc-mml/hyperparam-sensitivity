@@ -106,3 +106,69 @@ class TSearch():
         df_p0.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m0_params.csv'), index=False)
         df_p1.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'), index=False)
         df_all.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'), index=False)
+
+class TSSearch():
+    def __init__(self, opt):
+        self.opt = opt
+        self.params_base = get_params(opt.base_model)
+    
+    def run(self, train, test, scaler, iter_id, fold_id):
+        X_tr = train[0]
+        t_tr = train[1].flatten()
+        y_tr = train[2].flatten()
+
+        X0_tr = X_tr[t_tr < 1]
+        X1_tr = X_tr[t_tr > 0]
+        y0_tr = y_tr[t_tr < 1]
+        y1_tr = y_tr[t_tr > 0]
+
+        X_test = test[0]
+        t_test = test[1].flatten()
+        X0_test = X_test[t_test < 1]
+        X1_test = X_test[t_test > 0]
+
+        input_size = X0_tr.shape[1]
+
+        y0_hats = []
+        y1_hats = []
+        cate_hats = []
+        for params in ParameterGrid(self.params_base):
+            m0 = get_mlp_reg(input_size, params)
+            m1 = get_mlp_reg(input_size, params)
+
+            m0.fit(X0_tr, y0_tr)
+            m1.fit(X1_tr, y1_tr)
+
+            # Factual predictions for model selection purposes (predict X[t==0]).
+            y0_hat = m0.predict(X0_test)
+            y0_hats.append(y0_hat)
+
+            # Factual predictions for model selection purposes (predict X[t==1]).
+            y1_hat = m1.predict(X1_test)
+            y1_hats.append(y1_hat)
+
+            # For CATE prediction purposes (predict ALL X).
+            y0_hat_cate = m0.predict(X_test).reshape(-1, 1)
+            y1_hat_cate = m1.predict(X_test).reshape(-1, 1)
+
+            if self.opt.scale_y:
+                y0_hat_cate = scaler.inverse_transform(y0_hat_cate)
+                y1_hat_cate = scaler.inverse_transform(y1_hat_cate)
+
+            cate_hat = y1_hat_cate - y0_hat_cate
+            cate_hats.append(cate_hat)
+
+        if fold_id > 0:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
+        else:
+            filename = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        
+        y0_hats_arr = np.array(y0_hats, dtype=object)
+        y1_hats_arr = np.array(y1_hats, dtype=object)
+        cate_hats_arr = np.array(cate_hats, dtype=object)
+
+        np.savez_compressed(os.path.join(self.opt.output_path, filename), y0_hat=y0_hats_arr, y1_hat=y1_hats_arr, cate_hat=cate_hats_arr)
+
+    def save_params_info(self):
+        df_params = get_params_df(self.params_base)
+        df_params.to_csv(os.path.join(self.opt.output_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'), index=False)

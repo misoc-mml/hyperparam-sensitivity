@@ -20,7 +20,7 @@ import argparse
 
 from helpers.utils import init_logger
 from helpers.data import get_scaler
-from models.estimators_tf import SSearch, TSearch, TwoHeadSearch
+from models.estimators_tf import SSearch, TSearch, TSSearch, TwoHeadSearch
 from models.data import IHDP, JOBS, TWINS, NEWS
 
 def get_parser():
@@ -39,8 +39,7 @@ def get_parser():
     parser.add_argument('--debug', action='store_true')
 
     # Estimation
-    # Consider adding: XL, DR, DML, IPSW
-    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'two-head'], default='sl')
+    parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'two-head'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['mlp'], default='mlp')
 
     return parser
@@ -50,6 +49,8 @@ def get_model(opt):
         return SSearch(opt)
     elif opt.estimation_model == 'tl':
         return TSearch(opt)
+    elif opt.estimation_model == 'tls':
+        return TSSearch(opt)
     elif opt.estimation_model == 'two-head':
         return TwoHeadSearch(opt)
     else:

@@ -63,18 +63,22 @@ def get_dataset(name, path, iters):
     elif name == 'jobs':
         result = JOBS(path, iters)
     elif name == 'twins':
-        result = TWINS(path, iters)
+        result = TWINS(path, iters, static_splits=True)
     elif name == 'news':
-        result = NEWS(path, iters)
+        result = NEWS(path, iters, static_splits=True)
     else:
         raise ValueError('Unknown dataset type selected.')
     return result
 
 def scale_xxy(X_train, X_test, y_train, opt, cont_vars):
     scaler_x = get_scaler(opt.scaler)
-    # Scale only continuous features.
-    X_train[:, cont_vars] = scaler_x.fit_transform(X_train[:, cont_vars])
-    X_test[:, cont_vars] = scaler_x.transform(X_test[:, cont_vars])
+    if cont_vars:
+        # Scale only continuous features.
+        X_train[:, cont_vars] = scaler_x.fit_transform(X_train[:, cont_vars])
+        X_test[:, cont_vars] = scaler_x.transform(X_test[:, cont_vars])
+    else:
+        X_train = scaler_x.fit_transform(X_train)
+        X_test = scaler_x.transform(X_test)
 
     scaler_y = None
     if opt.scale_y:

@@ -25,9 +25,9 @@ def get_dataset(name, path, iters):
     elif name == 'jobs':
         result = JOBS(path, iters)
     elif name == 'twins':
-        result = TWINS(path, iters)
+        result = TWINS(path, iters, static_splits=True)
     elif name == 'news':
-        result = NEWS(path, iters)
+        result = NEWS(path, iters, static_splits=True)
     else:
         raise ValueError('Unknown dataset type selected.')
     return result

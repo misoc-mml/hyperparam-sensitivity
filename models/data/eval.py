@@ -21,12 +21,13 @@ class EvaluatorJobs(object):
         self.t = t
         self.e = e
         self.metrics = ['att', 'policy']
+        self.att = np.mean(self.yf[self.t > 0]) - np.mean(self.yf[(1 - self.t + self.e) > 1])
+        self.t_e = self.t[self.e > 0]
+        self.yf_e = self.yf[self.e > 0]
 
     def get_metrics(self, cate_hat):
-        att = np.mean(self.yf[self.t > 0]) - np.mean(self.yf[(1 - self.t + self.e) > 1])
-
         att_pred = np.mean(cate_hat[(self.t + self.e) > 1])
-        bias_att = att_pred - att
+        bias_att = att_pred - self.att
 
         policy_value = self.policy_val(cate_hat[self.e > 0])
 
@@ -43,25 +44,24 @@ class EvaluatorJobs(object):
 
         """
         # Consider only the cases for which we have experimental data (i.e., e > 0)
-        t = self.t[self.e > 0]
-        yf = self.yf[self.e > 0]
 
         if np.any(np.isnan(cate_hat)):
-            return np.nan, np.nan
+            return np.nan
 
         policy = cate_hat > 0.0
-        treat_overlap = (policy == t) * (t > 0)
-        control_overlap = (policy == t) * (t < 1)
+        policy_t = policy == self.t_e
+        treat_overlap = policy_t * (self.t_e > 0)
+        control_overlap = policy_t * (self.t_e < 1)
 
         if np.sum(treat_overlap) == 0:
             treat_value = 0
         else:
-            treat_value = np.mean(yf[treat_overlap])
+            treat_value = np.mean(self.yf_e[treat_overlap])
 
         if np.sum(control_overlap) == 0:
             control_value = 0
         else:
-            control_value = np.mean(yf[control_overlap])
+            control_value = np.mean(self.yf_e[control_overlap])
 
         pit = np.mean(policy)
         policy_value = pit * treat_value + (1 - pit) * control_value

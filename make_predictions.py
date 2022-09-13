@@ -118,6 +118,9 @@ if __name__ == "__main__":
     # Save the mapping of parameter combinations and IDs.
     model.save_params_info()
 
+    train_splits = splits['train'].astype(int)
+    valid_splits = splits['valid'].astype(int)
+
     # Data iterations
     for i in range(n_iters):
         if skipped < options.skip_iter:
@@ -130,10 +133,7 @@ if __name__ == "__main__":
         X_test, t_test, y_test = dataset.get_xty(test)
 
         # CV iterations
-        for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
-            train_idx = train_idx.astype(int)
-            valid_idx = valid_idx.astype(int)
-            
+        for k, (train_idx, valid_idx) in enumerate(zip(train_splits[i], valid_splits[i])):
             X_tr_fold, t_tr_fold, y_tr_fold = X_tr[train_idx], t_tr[train_idx], y_tr[train_idx]
             X_val_fold, t_val_fold, y_val_fold = X_tr[valid_idx], t_tr[valid_idx], y_tr[valid_idx]
 

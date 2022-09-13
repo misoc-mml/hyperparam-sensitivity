@@ -76,53 +76,61 @@ class SEvaluator():
         self.model_name = get_model_name(opt)
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.model_name}_params.csv'))
 
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
-        results_cols = ['iter_id', 'param_id', 'mse'] + eval.metrics + ['ate_hat', 'r2_score']
-        
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
             scaler.fit(y_tr)
             y_test_scaled = scaler.transform(y_test)
-            results_cols.insert(3, 'mse_inv')
         else:
             y_test_scaled = y_test
 
         if y_test_scaled.ndim == 1:
             y_test_scaled = y_test_scaled.reshape(-1, 1)
 
-        preds_filename_base = f'{self.model_name}_iter{iter_id}'
-        if fold_id > 0:
-            preds_filename_base += f'_fold{fold_id}'
-            results_cols.insert(1, 'fold_id')
-
+        preds_filename_base = f'{self.model_name}_iter{iter_id}_fold{fold_id}'
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_filename_base}.npz'), allow_pickle=True)
+
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse', 'r2_score']
+        
+        y_hats = preds['y_hat'].astype(float)
 
         test_results = []
         for p_id in self.df_params['id']:
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
-            ate_hat = np.mean(cate_hat)
-
             # Scaled MSE (y_hat is scaled).
-            y_hat = preds['y_hat'][p_id-1].reshape(-1, 1).astype(float)
+            y_hat = y_hats[p_id-1].reshape(-1, 1)
             test_mse = mse(y_hat, y_test_scaled)
             r2 = r2_score(y_test_scaled, y_hat)
 
-            test_metrics = eval.get_metrics(cate_hat)
-
-            result = [iter_id, p_id, test_mse] + test_metrics + [ate_hat, r2]
-
-            if self.opt.scale_y:
-                y_hat_inv = scaler.inverse_transform(y_hat)
-                # Unscaled MSE.
-                test_mse_inv = mse(y_hat_inv, y_test)
-                result.insert(3, test_mse_inv)
-
-            if fold_id > 0: result.insert(1, fold_id)
-
+            result = [iter_id, fold_id, p_id, test_mse, r2]
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
+
+    def _run_test(self, iter_id, y_tr, t_test, y_test, eval):
+        preds_filename_base = f'{self.model_name}_iter{iter_id}'
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_filename_base}.npz'), allow_pickle=True)
+
+        results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']
+
+        cate_hats = preds['cate_hat'].astype(float)
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            ate_hat = np.mean(cate_hat)
+            test_metrics = eval.get_metrics(cate_hat)
+
+            result = [iter_id, p_id] + test_metrics + [ate_hat]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
+
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        if fold_id > 0:
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+        else:
+            return self._run_test(iter_id, y_tr, t_test, y_test, eval)
 
 class SConverter():
     def __init__(self, opt):

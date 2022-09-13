@@ -98,9 +98,11 @@ class PluginScorer():
         preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
         cate_test = self.get_cate(iter_id, fold_id)
 
+        cate_hats = preds['cate_hat'].astype(float)
+
         test_results = []
         for p_id in est.df_params['id']:
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
 
             test_pehe = pehe(cate_test, cate_hat)
             test_ate = abs_ate(cate_test, cate_hat)

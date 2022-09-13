@@ -243,7 +243,7 @@ class IPSWSEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
     
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -255,33 +255,49 @@ class IPSWSEvaluator():
         if y_test_scaled.ndim == 1:
             y_test_scaled = y_test_scaled.reshape(-1, 1)
         
-        results_cols = ['iter_id', 'param_id', 'mse_prop', 'mse_reg'] + eval.metrics + ['ate_hat', 'r2_score_prop', 'r2_score_reg']
-        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
-
-        if fold_id > 0:
-            preds_cate_filename_base += f'_fold{fold_id}'
-            results_cols.insert(1, 'fold_id')
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_prop', 'mse_reg', 'r2_score_prop', 'r2_score_reg']
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
 
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
         
+        t_prob_hats = preds['t_prob_hat'].astype(float)
+        y_hats = preds['y_hat'].astype(float)
+
         test_results = []
         for p_id in self.df_params['id']:
-            prop_mse = mse(preds['t_prob_hat'][p_id-1].reshape(-1, 1).astype(float), t_test)
-            prop_r2 = r2_score(t_test, preds['t_prob_hat'][p_id-1].reshape(-1, 1).astype(float))
-
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
-            ate_hat = np.mean(cate_hat)
-
-            test_metrics = eval.get_metrics(cate_hat)
+            prop_mse = mse(t_prob_hats[p_id-1].reshape(-1, 1), t_test)
+            prop_r2 = r2_score(t_test, t_prob_hats[p_id-1].reshape(-1, 1))
 
             # Scaled MSE (y_hat is scaled).
-            y_hat = preds['y_hat'][p_id-1].reshape(-1, 1).astype(float)
+            y_hat = y_hats[p_id-1].reshape(-1, 1)
             reg_mse = mse(y_hat, y_test_scaled)
             reg_r2 = r2_score(y_test_scaled, y_hat)
 
-            result = [iter_id, p_id, prop_mse, reg_mse] + test_metrics + [ate_hat, prop_r2, reg_r2]
-            if fold_id > 0: result.insert(1, fold_id)
-
+            result = [iter_id, fold_id, p_id, prop_mse, reg_mse, prop_r2, reg_r2]
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
+    
+    def _run_test(self, iter_id, y_tr, t_test, y_test, eval):
+        results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
+        cate_hats = preds['cate_hat'].astype(float)
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            ate_hat = np.mean(cate_hat)
+            test_metrics = eval.get_metrics(cate_hat)
+
+            result = [iter_id, p_id] + test_metrics + [ate_hat]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
+
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        if fold_id > 0:
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+        else:
+            return self._run_test(iter_id, y_tr, t_test, y_test, eval)

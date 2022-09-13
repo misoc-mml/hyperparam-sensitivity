@@ -120,7 +120,7 @@ class TEvaluator():
         self.df_m1_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'))
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
 
-    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -133,40 +133,55 @@ class TEvaluator():
         y0_test = y_test_scaled[t_test < 1].reshape(-1, 1)
         y1_test = y_test_scaled[t_test > 0].reshape(-1, 1)
 
-        results_cols = ['iter_id', 'param_id', 'mse_m0', 'mse_m1'] + eval.metrics + ['ate_hat', 'r2_score_m0', 'r2_score_m1']
-        
-        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
-        if fold_id > 0:
-            preds_cate_filename_base += f'_fold{fold_id}'
-            results_cols.insert(1, 'fold_id')
-        
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
 
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_m0', 'mse_m1', 'r2_score_m0', 'r2_score_m1']
         m0_mse = {}
         m0_r2 = {}
-        for p0_id in self.df_m0_params['id']:
-            m0_mse[p0_id] = mse(preds['y0_hat'][p0_id-1].reshape(-1, 1).astype(float), y0_test)
-            m0_r2[p0_id] = r2_score(y0_test, preds['y0_hat'][p0_id-1].reshape(-1, 1).astype(float))
-        
         m1_mse = {}
         m1_r2 = {}
-        for p1_id in self.df_m1_params['id']:
-            m1_mse[p1_id] = mse(preds['y1_hat'][p1_id-1].reshape(-1, 1).astype(float), y1_test)
-            m1_r2[p1_id] = r2_score(y1_test, preds['y1_hat'][p1_id-1].reshape(-1, 1).astype(float))
-
+        y0_hats = preds['y0_hat'].astype(float)
+        y1_hats = preds['y1_hat'].astype(float)
+        # m0 and m1 share the same hyperparam search space (same models), so can do 1 loop instead of 2.
+        for p0_id in self.df_m0_params['id']:
+            m0_mse[p0_id] = mse(y0_hats[p0_id-1].reshape(-1, 1), y0_test)
+            m0_r2[p0_id] = r2_score(y0_test, y0_hats[p0_id-1].reshape(-1, 1))
+        
+            m1_mse[p0_id] = mse(y1_hats[p0_id-1].reshape(-1, 1), y1_test)
+            m1_r2[p0_id] = r2_score(y1_test, y1_hats[p0_id-1].reshape(-1, 1))
+        
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
-            cate_hat = preds['cate_hat'][p_id-1].reshape(-1, 1).astype(float)
+            result = [iter_id, fold_id, p_id, m0_mse[p0_id], m1_mse[p1_id], m0_r2[p0_id], m1_r2[p1_id]]
+            test_results.append(result)
+        
+        return pd.DataFrame(test_results, columns=results_cols)
+    
+    def _run_test(self, iter_id, y_tr, t_test, y_test, eval):
+        preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
+        preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
+
+        results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']
+        cate_hats = preds['cate_hat'].astype(float)
+
+        test_results = []
+        for p_id in self.df_params['id']:
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
 
             test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id, m0_mse[p0_id], m1_mse[p1_id]] + test_metrics + [ate_hat, m0_r2[p0_id], m1_r2[p1_id]]
-            if fold_id > 0: result.insert(1, fold_id)
-
+            result = [iter_id, p_id] + test_metrics + [ate_hat]
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
+
+    def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        if fold_id > 0:
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+        else:
+            return self._run_test(iter_id, y_tr, t_test, y_test, eval)
 
 class TSSearch():
     def __init__(self, opt):

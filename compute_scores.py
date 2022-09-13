@@ -92,6 +92,7 @@ if __name__ == "__main__":
     for i in range(n_iters):
         # CV iterations
         for k, _ in enumerate(splits['train'][i]):
+            logging.info(f'Iter {i+1}, Fold {k+1}')
             df_fold = scorer.score(evaluator, i+1, k+1)
             df_all = pd.concat([df_all, df_fold], ignore_index=True)
 

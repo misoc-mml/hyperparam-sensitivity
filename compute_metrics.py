@@ -92,6 +92,9 @@ if __name__ == "__main__":
 
     evaluator = get_evaluator(options)
 
+    train_splits = splits['train'].astype(int)
+    valid_splits = splits['valid'].astype(int)
+
     # Data iterations
     for i in range(n_iters):
         train, test = dataset._get_train_test(i)
@@ -100,10 +103,18 @@ if __name__ == "__main__":
         X_test, t_test, y_test = dataset.get_xty(test)
         eval_test = dataset.get_eval(test)
 
+        # *** Test set metrics ***
+        df_iter = evaluator.run(i+1, -1, y_tr, t_test, y_test, eval_test)
+        df_test = pd.concat([df_test, df_iter], ignore_index=True)
+        # ***
+
+        # These models don't support standard validation metrics.
+        if options.estimation_model in ('xl', 'cf'):
+            continue
+
         # CV iterations
-        for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
-            train_idx = train_idx.astype(int)
-            valid_idx = valid_idx.astype(int)
+        for k, (train_idx, valid_idx) in enumerate(zip(train_splits[i], valid_splits[i])):
+            logging.info(f'Iter {i+1}, Fold {k+1}')
 
             y_tr_fold = y_tr[train_idx]
             t_val_fold = t_tr[valid_idx]
@@ -115,11 +126,8 @@ if __name__ == "__main__":
             df_val = pd.concat([df_val, df_fold], ignore_index=True)
             # ***
 
-        # *** Test set metrics ***
-        df_iter = evaluator.run(i+1, -1, y_tr, t_test, y_test, eval_test)
-        df_test = pd.concat([df_test, df_iter], ignore_index=True)
-        # ***
-
     model_name = get_model_name(options)
-    df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)
     df_test.to_csv(os.path.join(options.output_path, f'{model_name}_test_metrics.csv'), index=False)
+
+    if df_val is not None:
+        df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)

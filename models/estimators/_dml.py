@@ -175,7 +175,7 @@ class DMLSEvaluator():
             test_results.append(result)
         
         test_results_arr = np.array(test_results)
-        all_results = np.hstack((test_results_arr, preds['scores']).astype(float))
+        all_results = np.hstack((test_results_arr, preds['scores'].astype(float)))
 
         return pd.DataFrame(all_results, columns=results_cols)
 

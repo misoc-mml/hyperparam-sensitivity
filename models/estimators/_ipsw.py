@@ -189,6 +189,7 @@ class IPSWSSearch():
             weights = _get_ps_weights(ps_model, X_tr, t_tr)
 
             ps_hat = ps_model.predict(X_test).reshape(-1, 1)
+            # TODO: take only P(t==1) -- second column
             ps_prob_hat = ps_model.predict_proba(X_test).reshape(-1, 1)
 
             t_hats.append(ps_hat)
@@ -265,8 +266,11 @@ class IPSWSEvaluator():
 
         test_results = []
         for p_id in self.df_params['id']:
-            prop_mse = mse(t_prob_hats[p_id-1].reshape(-1, 1), t_test)
-            prop_r2 = r2_score(t_test, t_prob_hats[p_id-1].reshape(-1, 1))
+            #prop_mse = mse(t_prob_hats[p_id-1].reshape(-1, 1), t_test)
+            #prop_r2 = r2_score(t_test, t_prob_hats[p_id-1].reshape(-1, 1))
+            # Temporary hack to counter the bug in the search part.
+            prop_mse = mse(t_prob_hats[p_id-1].reshape(-1, 2)[:, 1:], t_test)
+            prop_r2 = r2_score(t_test, t_prob_hats[p_id-1].reshape(-1, 2)[:, 1:])
 
             # Scaled MSE (y_hat is scaled).
             y_hat = y_hats[p_id-1].reshape(-1, 1)

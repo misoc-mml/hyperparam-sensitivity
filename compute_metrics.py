@@ -92,9 +92,6 @@ if __name__ == "__main__":
 
     evaluator = get_evaluator(options)
 
-    train_splits = splits['train'].astype(int)
-    valid_splits = splits['valid'].astype(int)
-
     # Data iterations
     for i in range(n_iters):
         train, test = dataset._get_train_test(i)
@@ -113,8 +110,11 @@ if __name__ == "__main__":
             continue
 
         # CV iterations
-        for k, (train_idx, valid_idx) in enumerate(zip(train_splits[i], valid_splits[i])):
+        for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
             logging.info(f'Iter {i+1}, Fold {k+1}')
+
+            train_idx = train_idx.astype(int)
+            valid_idx = valid_idx.astype(int)
 
             y_tr_fold = y_tr[train_idx]
             t_val_fold = t_tr[valid_idx]

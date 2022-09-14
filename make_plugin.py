@@ -84,9 +84,6 @@ if __name__ == "__main__":
 
     model = get_model(options)
 
-    train_splits = splits['train'].astype(int)
-    valid_splits = splits['valid'].astype(int)
-
     # Data iterations
     for i in range(n_iters):
         train, _ = dataset._get_train_test(i)
@@ -94,7 +91,10 @@ if __name__ == "__main__":
         X_tr, t_tr, y_tr = dataset.get_xty(train)
 
         # CV iterations
-        for k, (train_idx, valid_idx) in enumerate(zip(train_splits[i], valid_splits[i])):
+        for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
+            train_idx = train_idx.astype(int)
+            valid_idx = valid_idx.astype(int)
+
             X_tr_fold = X_tr[train_idx]
             X_val_fold, t_val_fold, y_val_fold = X_tr[valid_idx], t_tr[valid_idx], y_tr[valid_idx]
 

@@ -12,8 +12,11 @@ def compare_metrics_meta(cate_models, meta_models, base_models, plugin_models, r
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
-    df_cate = comp.compare_metrics(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
-    return pd.concat([df_meta, df_cate], ignore_index=True)
+    if cate_models:
+        df_cate = comp.compare_metrics(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
+    
+    return df_meta
 
 def compare_risks_meta(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
     mode = 'risk'
@@ -22,8 +25,11 @@ def compare_risks_meta(cate_models, meta_models, base_models, plugin_models, rsc
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
-    df_cate = comp.compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
-    return pd.concat([df_meta, df_cate], ignore_index=True)
+    if cate_models:
+        df_cate = comp.compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
+    
+    return df_meta
 
 def compare_correlations_meta(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
     mode = 'corr'
@@ -32,8 +38,11 @@ def compare_correlations_meta(cate_models, meta_models, base_models, plugin_mode
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
-    df_cate = comp.compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
-    return pd.concat([df_meta, df_cate], ignore_index=True)
+    if cate_models:
+        df_cate = comp.compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
+    
+    return df_meta
 
 def _process_test_meta(meta_models, base_models, base_dir, metrics):
     test_list = []

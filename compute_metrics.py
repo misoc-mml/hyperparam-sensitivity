@@ -129,5 +129,12 @@ if __name__ == "__main__":
     model_name = get_model_name(options)
     df_test.to_csv(os.path.join(options.output_path, f'{model_name}_test_metrics.csv'), index=False)
 
+    #print(df_test[['ate', 'pehe']].min())
+    #df_ate = df_test.groupby(['iter_id'], as_index=False).apply(lambda x: x.loc[x['ate'].idxmin(), ['ate']])
+    #df_pehe = df_test.groupby(['iter_id'], as_index=False).apply(lambda x: x.loc[x['pehe'].idxmin(), ['pehe']])
+    #df_all = df_ate.merge(df_pehe, on=['iter_id'])
+    #print(df_all)
+    #print(df_all.mean())
+
     if df_val is not None:
         df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)

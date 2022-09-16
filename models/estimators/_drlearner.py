@@ -140,7 +140,7 @@ class DRSSearch():
             model_final = clone(self.m_reg)
             model_final.set_params(**params)
 
-            dr = DRLearner(model_propensity=model_prop, model_regression=model_reg, model_final=model_final, cv=self.opt.inner_cv, random_state=self.opt.seed)
+            dr = DRLearner(model_propensity=model_prop, model_regression=model_reg, model_final=model_final, cv=self.opt.inner_cv, random_state=self.opt.seed, min_propensity=0.1)
             dr.fit(y_tr, t_tr, X=X_tr)
 
             cate_hat = dr.effect(X_test).reshape(-1, 1)

@@ -9,6 +9,7 @@ def compare_metrics_meta(cate_models, meta_models, base_models, plugin_models, r
     df_meta = _process_test_meta(meta_models, base_models, base_dir, metrics)
     df_meta = _process_mse_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
+    df_meta = _process_mixed_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
@@ -22,6 +23,7 @@ def compare_risks_meta(cate_models, meta_models, base_models, plugin_models, rsc
     mode = 'risk'
     df_meta = _process_mse_meta(None, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
+    df_meta = _process_mixed_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
@@ -35,6 +37,7 @@ def compare_correlations_meta(cate_models, meta_models, base_models, plugin_mode
     mode = 'corr'
     df_meta = _process_mse_meta(None, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
+    df_meta = _process_mixed_meta(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_rscores_meta(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
@@ -59,25 +62,36 @@ def _process_test_meta(meta_models, base_models, base_dir, metrics):
     return pd.DataFrame(test_list, columns=['name'] + metrics_test)
 
 def _process_mse_meta(df_main, meta_models, base_models, base_dir, mode, metrics):
-    metrics_test = [f'{metric}_test' for metric in metrics]
     mse_list = []
     for mm in meta_models:
         df_mm = None
-        for bm in base_models:
-            model_name = f'{mm}_{bm}'
-            df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
 
-            df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
-            df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+        if mm in ('cf', 'xl', 'drs', 'dmls'):
+            mse_i = ['-'] * 2
+        else:
+            for bm in base_models:
+                model_name = f'{mm}_{bm}'
+                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
 
-            if mm == 'tl':
-                df_base_val_gr['mse'] = df_base_val_gr[['mse_m0', 'mse_m1']].mean(axis=1)
-                df_base_test['mse'] = df_base_test[['mse_m0', 'mse_m1']].mean(axis=1)
+                df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
+                df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+                if mm == 'tl':
+                    df_base_val_gr['mse_target'] = df_base_val_gr[['mse_m0', 'mse_m1']].mean(axis=1)
+                elif mm == 'ipsws':
+                    df_base_val_gr['mse_target'] = df_base_val_gr[['mse_prop', 'mse_reg']].mean(axis=1)
+                else:
+                    df_base_val_gr['mse_target'] = df_base_val_gr['mse']
+
+                for metric in metrics:
+                    df_base_test[f'{metric}_target'] = df_base_test[metric]
+                metrics_target = [f'{metric}_target' for metric in metrics]
             
-            df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-            df_mm = pd.concat([df_mm, df_base], ignore_index=True)
+                df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
 
-        mse_i = ut.fn_by_best(df_mm, 'mse_val', metrics_test, mode, True)
+            mse_i = ut.fn_by_best(df_mm, 'mse_target', metrics_target, mode, True)
+
         mse_list.append([mm] + mse_i)
     
     df_mse = pd.DataFrame(mse_list, columns=['name'] + [f'{metric}_mse' for metric in metrics])
@@ -88,28 +102,67 @@ def _process_mse_meta(df_main, meta_models, base_models, base_dir, mode, metrics
         return df_main.merge(df_mse, on=['name'])
 
 def _process_r2scores_meta(df_main, meta_models, base_models, base_dir, mode, metrics):
-    metrics_test = [f'{metric}_test' for metric in metrics]
     r2_list = []
     for mm in meta_models:
         df_mm = None
-        for bm in base_models:
-            model_name = f'{mm}_{bm}'
-            df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
 
-            df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
-            df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+        if mm in ('cf', 'xl', 'drs', 'dmls'):
+            r2_i = ['-'] * 2
+        else:
+            for bm in base_models:
+                model_name = f'{mm}_{bm}'
+                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
 
-            if mm == 'tl':
-                df_base_val_gr['r2_score'] = df_base_val_gr[['r2_score_m0', 'r2_score_m1']].mean(axis=1)
-                df_base_test['r2_score'] = df_base_test[['r2_score_m0', 'r2_score_m1']].mean(axis=1)
+                df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
+                df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+                if mm == 'tl':
+                    df_base_val_gr['r2_score_target'] = df_base_val_gr[['r2_score_m0', 'r2_score_m1']].mean(axis=1)
+                elif mm == 'ipsws':
+                    df_base_val_gr['r2_score_target'] = df_base_val_gr[['r2_score_prop', 'r2_score_reg']].mean(axis=1)
+                else:
+                    df_base_val_gr['r2_score_target'] = df_base_val_gr['r2_score']
+
+                for metric in metrics:
+                    df_base_test[f'{metric}_target'] = df_base_test[metric]
+                metrics_target = [f'{metric}_target' for metric in metrics]
             
-            df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-            df_mm = pd.concat([df_mm, df_base], ignore_index=True)
+                df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
 
-        r2_i = ut.fn_by_best(df_mm, 'r2_score_val', metrics_test, mode, False)
+            r2_i = ut.fn_by_best(df_mm, 'r2_score_target', metrics_target, mode, False)
+
         r2_list.append([mm] + r2_i)
     
     df_r2 = pd.DataFrame(r2_list, columns=['name'] + [f'{metric}_r2' for metric in metrics])
+    return df_main.merge(df_r2, on=['name'])
+
+def _process_mixed_meta(df_main, meta_models, base_models, base_dir, mode, metrics):
+    score_list = []
+    for mm in meta_models:
+        df_mm = None
+
+        if mm in ('cf', 'xl', 'sl', 'tl', 'ipsws'):
+            score_i = ['-'] * 2
+        else:
+            for bm in base_models:
+                model_name = f'{mm}_{bm}'
+                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+
+                df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
+                df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+                # mixed = R^2 + ACC - MSE
+                df_base_val_gr['mixed'] = df_base_val_gr['reg_score'] + df_base_val_gr['prop_score'] - df_base_val_gr['final_score']
+            
+                df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
+
+            score_i = ut.fn_by_best(df_mm, 'mixed', metrics, mode, False)
+
+        score_list.append([mm] + score_i)
+    
+    df_r2 = pd.DataFrame(score_list, columns=['name'] + [f'{metric}_r2' for metric in metrics])
     return df_main.merge(df_r2, on=['name'])
 
 def _process_plugins_meta(df_main, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics):

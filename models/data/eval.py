@@ -7,7 +7,7 @@ class Evaluator(object):
     def __init__(self, mu0, mu1):
         self.mu0 = mu0.reshape(-1, 1) if mu0.ndim == 1 else mu0
         self.mu1 = mu1.reshape(-1, 1) if mu1.ndim == 1 else mu1
-        self.cate_true = self.mu1 = self.mu0
+        self.cate_true = self.mu1 - self.mu0
         self.metrics = ['ate', 'pehe']
 
     def get_metrics(self, cate_hat):

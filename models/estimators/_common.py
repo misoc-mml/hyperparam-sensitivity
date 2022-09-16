@@ -1,6 +1,6 @@
 import numpy as np
 
-from sklearn.linear_model import Ridge, LassoLars, TweedieRegressor, RidgeClassifier
+from sklearn.linear_model import Ridge, LassoLars, TweedieRegressor
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
 from sklearn.ensemble import RandomForestRegressor, ExtraTreesRegressor, RandomForestClassifier, ExtraTreesClassifier
 from sklearn.kernel_ridge import KernelRidge
@@ -66,9 +66,9 @@ def get_weighted_regressor(name, seed=1, n_jobs=-1):
 
 def get_regressor(name, seed=1, n_jobs=1):
     if name == 'l1':
-        return LassoLars(normalize=False, random_state=seed)
+        return LassoLars(random_state=seed)
     elif name == 'l2':
-        return Ridge(normalize=False, random_state=seed)
+        return Ridge(random_state=seed)
     elif name == 'tr':
         return Pipeline([('feat', PolynomialFeatures()), ('clf', TweedieRegressor())])
     elif name == 'dt':
@@ -88,9 +88,9 @@ def get_regressor(name, seed=1, n_jobs=1):
 
 def get_classifier(name, seed=1, n_jobs=1):
     if name == 'l1':
-        return LassoLarsClassifier(normalize=False, random_state=seed)
+        return LassoLarsClassifier(random_state=seed)
     elif name == 'l2':
-        return RidgeClassifier(normalize=False, random_state=seed)
+        return RidgeClassifier(random_state=seed)
     elif name == 'tr':
         return None
     elif name == 'dt':

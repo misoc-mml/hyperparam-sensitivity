@@ -53,8 +53,13 @@ def _process_test_meta(meta_models, base_models, base_dir, metrics):
         df_mm = None
         for bm in base_models:
             model_name = f'{mm}_{bm}'
-            df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+            try:
+                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+            except:
+                print(f'{model_name} is missing')
+                continue
             df_mm = pd.concat([df_mm, df_base_test], ignore_index=True)
+
         best_metrics = [ut.get_best_metric(df_mm, metric) for metric in metrics]
         test_list.append([mm] + best_metrics)
     
@@ -71,7 +76,11 @@ def _process_mse_meta(df_main, meta_models, base_models, base_dir, mode, metrics
         else:
             for bm in base_models:
                 model_name = f'{mm}_{bm}'
-                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
 
                 df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
                 df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
@@ -111,7 +120,11 @@ def _process_r2scores_meta(df_main, meta_models, base_models, base_dir, mode, me
         else:
             for bm in base_models:
                 model_name = f'{mm}_{bm}'
-                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
 
                 df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
                 df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
@@ -147,7 +160,11 @@ def _process_mixed_meta(df_main, meta_models, base_models, base_dir, mode, metri
         else:
             for bm in base_models:
                 model_name = f'{mm}_{bm}'
-                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
 
                 df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
                 df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
@@ -175,8 +192,11 @@ def _process_plugins_meta(df_main, plugin_models, meta_models, base_models, base
             df_mm = None
             for bm in base_models:
                 model_name = f'{mm}_{bm}'
-
-                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
 
                 df_plugin_val = pd.read_csv(os.path.join(plugin_dir, pm, f'{model_name}_plugin_{pm}.csv'))
                 df_plugin_val_gr = df_plugin_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
@@ -212,8 +232,11 @@ def _process_rscores_meta(df_main, rscore_base_models, meta_models, base_models,
             df_mm = None
             for bm in base_models:
                 model_name = f'{mm}_{bm}'
-
-                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
 
                 df_rscore_val = pd.read_csv(os.path.join(rscore_dir, rs_name, f'{model_name}_r_score_{rs_name}.csv'))
                 df_rscore_val_gr = df_rscore_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])

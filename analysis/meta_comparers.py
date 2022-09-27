@@ -179,7 +179,7 @@ def _process_mixed_meta(df_main, meta_models, base_models, base_dir, mode, metri
 
         score_list.append([mm] + score_i)
     
-    df_r2 = pd.DataFrame(score_list, columns=['name'] + [f'{metric}_r2' for metric in metrics])
+    df_r2 = pd.DataFrame(score_list, columns=['name'] + [f'{metric}_mixed' for metric in metrics])
     return df_main.merge(df_r2, on=['name'])
 
 def _process_plugins_meta(df_main, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics):

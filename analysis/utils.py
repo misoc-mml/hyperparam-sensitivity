@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 
 def _mean_std_str(mean, std):
-    return f'{mean:.3f} +/- {std:.3f}'
+    #return f'{mean:.3f} +/- {std:.3f}'
+    return f'${mean:.3f}\pm{std:.3f}$'
 
 def _merge_scores(scores1, scores2):
     return [_mean_std_str(s1, s2) for s1, s2 in zip(scores1, scores2)]

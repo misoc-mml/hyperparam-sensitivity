@@ -3,31 +3,34 @@ import pandas as pd
 
 import utils as ut
 
-def compare_metrics(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_metrics(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df = _process_test(cate_models, base_dir, metrics)
     df = _process_mse(df, cate_models, base_dir, mode, metrics)
     df = _process_r2scores(df, cate_models, base_dir, mode, metrics)
     df = _process_mixed_score(df, cate_models, base_dir, mode, metrics)
     df = _process_plugins(df, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df = _process_matching(df, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df = _process_rscores(df, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     return df
 
-def compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_risks(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'risk'
     df = _process_mse(None, cate_models, base_dir, mode, metrics)
     df = _process_r2scores(df, cate_models, base_dir, mode, metrics)
     df = _process_mixed_score(df, cate_models, base_dir, mode, metrics)
     df = _process_plugins(df, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df = _process_matching(df, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df = _process_rscores(df, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     return df
 
-def compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_correlations(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'corr'
     df = _process_mse(None, cate_models, base_dir, mode, metrics)
     df = _process_r2scores(df, cate_models, base_dir, mode, metrics)
     df = _process_mixed_score(df, cate_models, base_dir, mode, metrics)
     df = _process_plugins(df, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df = _process_matching(df, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df = _process_rscores(df, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     return df
 
@@ -137,6 +140,38 @@ def _process_plugins(df_main, plugin_models, cate_models, base_dir, plugin_dir, 
 
         df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_{pm}_ate' for metric in metrics])
         df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_{pm}_pehe' for metric in metrics])
+        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
+        df_copy = df_copy.merge(df_plugin, on=['name'])
+    
+    return df_copy
+
+def _process_matching(df_main, ks, cate_models, base_dir, matching_dir, mode, metrics):
+    df_copy = df_main.copy()
+    metrics_test = [f'{metric}_test' for metric in metrics]
+    for k in ks:
+        plugin_ate_list = []
+        plugin_pehe_list = []
+        for cm in cate_models:
+            df_base_test = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+
+            # ATE and PEHE
+            df_plugin_val = pd.read_csv(os.path.join(matching_dir, f'match_{k}k', f'{cm}_matching_match_{k}k.csv'))
+            df_plugin_val_gr = df_plugin_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+            df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+
+            # Suffixes are applied only to duplicated column names.
+            if 'ate' in metrics: # assume ['ate', 'pehe']
+                plugin_ate_i = ut.fn_by_best(df_plugin, 'ate_val', metrics_test, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_plugin, 'pehe_val', metrics_test, mode, True)
+            else:
+                plugin_ate_i = ut.fn_by_best(df_plugin, 'ate', metrics, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_plugin, 'pehe', metrics, mode, True)
+
+            plugin_ate_list.append([cm] + plugin_ate_i)
+            plugin_pehe_list.append([cm] + plugin_pehe_i)
+
+        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_match_{k}k_ate' for metric in metrics])
+        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_match_{k}k_pehe' for metric in metrics])
         df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
         df_copy = df_copy.merge(df_plugin, on=['name'])
     

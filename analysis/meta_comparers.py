@@ -4,105 +4,114 @@ import pandas as pd
 import utils as ut
 import comparers as comp
 
-def compare_metrics_meta_est(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_metrics_meta_est(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_meta_est(meta_models, base_models, base_dir, metrics)
     df_meta = _process_mse_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_mixed_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta_est(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_est(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_est(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_metrics(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_metrics(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
 
-def compare_metrics_meta_base(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_metrics_meta_base(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_meta_base(meta_models, base_models, base_dir, metrics)
     df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_metrics(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_metrics(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
 
-def compare_metrics_all(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_metrics_all(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_all(cate_models, base_dir, metrics)
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     
     return df_meta
 
-def compare_risks_all(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_risks_all(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'risk'
     df_meta = _process_test_all(cate_models, base_dir, metrics)
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     
     return df_meta
 
-def compare_correlations_all(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_correlations_all(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'corr'
     df_meta = _process_test_all(cate_models, base_dir, metrics)
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
     
     return df_meta
 
-def compare_risks_meta_est(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_risks_meta_est(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'risk'
     df_meta = _process_mse_meta_est(None, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_mixed_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta_est(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_est(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_est(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_risks(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
 
-def compare_risks_meta_base(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_risks_meta_base(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'risk'
     df_meta = _process_test_meta_base(meta_models, base_models, base_dir, metrics)
     df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_risks(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_risks(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
 
-def compare_correlations_meta_est(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_correlations_meta_est(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'corr'
     df_meta = _process_mse_meta_est(None, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_mixed_meta_est(df_meta, meta_models, base_models, base_dir, mode, metrics)
     df_meta = _process_plugins_meta_est(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_est(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_est(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_correlations(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
 
-def compare_correlations_meta_base(cate_models, meta_models, base_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics):
+def compare_correlations_meta_base(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'corr'
     df_meta = _process_test_meta_base(meta_models, base_models, base_dir, metrics)
     df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
-        df_cate = comp.compare_correlations(cate_models, plugin_models, rscore_base_models, base_dir, plugin_dir, rscore_dir, metrics)
+        df_cate = comp.compare_correlations(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
         df_meta = pd.concat([df_meta, df_cate], ignore_index=True)
     
     return df_meta
@@ -396,6 +405,129 @@ def _process_plugins_all(df_main, plugin_models, cate_models, base_dir, plugin_d
         
         df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_{pm}_ate' for metric in metrics])
         df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_{pm}_pehe' for metric in metrics])
+        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
+        df_copy = df_copy.merge(df_plugin, on=['name'])
+    
+    return df_copy
+
+def _process_matching_meta_est(df_main, ks, meta_models, base_models, base_dir, matching_dir, mode, metrics):
+    df_copy = df_main.copy()
+    metrics_test = [f'{metric}_test' for metric in metrics]
+    for k in ks:
+        plugin_ate_list = []
+        plugin_pehe_list = []
+        for mm in meta_models:
+            df_mm = None
+            for bm in base_models:
+                model_name = f'{mm}_{bm}'
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
+
+                df_plugin_val = pd.read_csv(os.path.join(matching_dir, f'match_{k}k', f'{model_name}_matching_match_{k}k.csv'))
+                df_plugin_val_gr = df_plugin_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+                df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+
+                df_mm = pd.concat([df_mm, df_plugin], ignore_index=True, join='inner')
+
+            # Suffixes are applied only to duplicated column names.
+            if 'ate' in metrics: # assume ['ate', 'pehe']
+                plugin_ate_i = ut.fn_by_best(df_mm, 'ate_val', metrics_test, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_mm, 'pehe_val', metrics_test, mode, True)
+            else:
+                plugin_ate_i = ut.fn_by_best(df_mm, 'ate', metrics, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_mm, 'pehe', metrics, mode, True)
+
+            plugin_ate_list.append([mm] + plugin_ate_i)
+            plugin_pehe_list.append([mm] + plugin_pehe_i)
+        
+        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_match_{k}k_ate' for metric in metrics])
+        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_match_{k}k_pehe' for metric in metrics])
+        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
+        df_copy = df_copy.merge(df_plugin, on=['name'])
+    
+    return df_copy
+
+def _process_matching_meta_base(df_main, ks, meta_models, base_models, base_dir, matching_dir, mode, metrics):
+    df_copy = df_main.copy()
+    metrics_test = [f'{metric}_test' for metric in metrics]
+    for k in ks:
+        plugin_ate_list = []
+        plugin_pehe_list = []
+        for bm in base_models:
+            df_bm = None
+            for mm in meta_models:
+                model_name = f'{mm}_{bm}'
+                try:
+                    df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+                except:
+                    print(f'{model_name} is missing')
+                    continue
+                
+                df_plugin_val = pd.read_csv(os.path.join(matching_dir, f'match_{k}k', f'{model_name}_matching_match_{k}k.csv'))
+                df_plugin_val_gr = df_plugin_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+                df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+
+                df_bm = pd.concat([df_bm, df_plugin], ignore_index=True, join='inner')
+            
+            # Suffixes are applied only to duplicated column names.
+            if 'ate' in metrics: # assume ['ate', 'pehe']
+                plugin_ate_i = ut.fn_by_best(df_bm, 'ate_val', metrics_test, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_bm, 'pehe_val', metrics_test, mode, True)
+            else:
+                plugin_ate_i = ut.fn_by_best(df_bm, 'ate', metrics, mode, True)
+                plugin_pehe_i = ut.fn_by_best(df_bm, 'pehe', metrics, mode, True)
+            
+            plugin_ate_list.append([bm] + plugin_ate_i)
+            plugin_pehe_list.append([bm] + plugin_pehe_i)
+        
+        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_match_{k}k_ate' for metric in metrics])
+        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_match_{k}k_pehe' for metric in metrics])
+        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
+        df_copy = df_copy.merge(df_plugin, on=['name'])
+    
+    return df_copy
+
+def _process_matching_all(df_main, ks, cate_models, base_dir, matching_dir, mode, metrics):
+    df_copy = df_main.copy()
+    for k in ks:
+        plugin_ate_list = []
+        plugin_pehe_list = []
+        df_all = None
+        for cm in cate_models:
+            try:
+                df_base_test = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+            except:
+                print(f'{cm} is missing')
+                continue
+                
+            df_plugin_val = pd.read_csv(os.path.join(matching_dir, f'match_{k}k', f'{cm}_matching_match_{k}k.csv'))
+            df_plugin_val_gr = df_plugin_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+            df_plugin_val_gr['ate_val_target'] = df_plugin_val_gr['ate']
+            df_plugin_val_gr['pehe_val_target'] = df_plugin_val_gr['pehe']
+
+            for metric in metrics:
+                df_base_test[f'{metric}_test_target'] = df_base_test[metric]
+
+            df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+
+            df_all = pd.concat([df_all, df_plugin], ignore_index=True, join='inner')
+            
+        metrics_target = [f'{metric}_test_target' for metric in metrics]
+            
+        plugin_ate_i = ut.fn_by_best(df_all, 'ate_val_target', metrics_target, mode, True)
+        plugin_pehe_i = ut.fn_by_best(df_all, 'pehe_val_target', metrics_target, mode, True)
+
+        plugin_ate_list.append(['all'] + plugin_ate_i)
+        plugin_pehe_list.append(['all'] + plugin_pehe_i)
+        
+        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_match_{k}k_ate' for metric in metrics])
+        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_match_{k}k_pehe' for metric in metrics])
         df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
         df_copy = df_copy.merge(df_plugin, on=['name'])
     

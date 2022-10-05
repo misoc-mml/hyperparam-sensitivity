@@ -19,13 +19,13 @@ base_metrics_dir = '../results/metrics/'
 
 plugin_meta_models = ['sl', 'tl']
 #plugin_base_models = ['dt', 'lgbm', 'cb']
-plugin_base_models = ['dt', 'lgbm']
+plugin_base_models = ['dt', 'lgbm', 'kr']
 #plugin_base_models = ['lgbm']
 plugin_models = [f'{pmm}_{pbm}' for pmm in plugin_meta_models for pbm in plugin_base_models]
 plugin_dir = '../results/scores/'
 
 #rscore_base_models = ['dt', 'lgbm', 'cb']
-rscore_base_models = ['dt', 'lgbm']
+rscore_base_models = ['dt', 'lgbm', 'kr']
 #rscore_base_models = ['lgbm']
 rscore_dir = '../results/scores/'
 

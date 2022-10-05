@@ -12,7 +12,7 @@ import pandas as pd
 from helpers.utils import init_logger, get_model_name
 from models.estimators import SEvaluator, TEvaluator, XEvaluator, DREvaluator, DMLEvaluator, IPSWEvaluator, CausalForestEvaluator
 from models.estimators import TSEvaluator, DRSEvaluator, DMLSEvaluator, IPSWSEvaluator
-from models.scorers import PluginScorer, RScorerEvaluator
+from models.scorers import PluginScorer, RScorerEvaluator, MatchingEvaluator
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -28,7 +28,7 @@ def get_parser():
     # Estimation
     parser.add_argument('--em', dest='estimation_model', type=str, choices=['sl', 'tl', 'tls', 'xl', 'dr', 'drs', 'dml', 'dmls', 'ipsw', 'ipsws', 'two-head', 'cf'], default='sl')
     parser.add_argument('--bm', dest='base_model', type=str, choices=['l1', 'l2', 'tr', 'dt', 'rf', 'et', 'kr', 'cb', 'lgbm', 'mlp'], default='l1')
-    parser.add_argument('--st', type=str, dest='scorer_type', choices=['plugin', 'r_score'], default='plugin')
+    parser.add_argument('--st', type=str, dest='scorer_type', choices=['plugin', 'r_score', 'matching'], default='plugin')
     parser.add_argument('--sn', type=str, dest='scorer_name')
 
     return parser
@@ -38,6 +38,8 @@ def get_scorer(opt):
         return PluginScorer(opt)
     elif opt.scorer_type == 'r_score':
         return RScorerEvaluator(opt)
+    elif opt.scorer_type == 'matching':
+        return MatchingEvaluator(opt)
     else:
         raise ValueError("Unrecognised 'get_scorer' key.")
 

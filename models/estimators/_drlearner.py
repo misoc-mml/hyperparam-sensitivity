@@ -165,15 +165,18 @@ class DRSEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
 
-    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'reg_score', 'prop_score', 'final_score']
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
+        results_cols = ['iter_id', 'fold_id', 'param_id'] + eval.metrics + ['reg_score', 'prop_score', 'final_score']
         preds_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
         
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_filename_base}.npz'), allow_pickle=True)
+        cate_hats = preds['cate_hat'].astype(float)
         
         test_results = []
         for p_id in self.df_params['id']:
-            result = [iter_id, fold_id, p_id]
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            test_metrics = eval.get_metrics(cate_hat)
+            result = [iter_id, fold_id, p_id] + test_metrics
             test_results.append(result)
         
         test_results_arr = np.array(test_results)
@@ -201,7 +204,7 @@ class DRSEvaluator():
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if fold_id > 0:
-            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test, eval)
         else:
             return self._run_test(iter_id, y_tr, t_test, y_test, eval)
 

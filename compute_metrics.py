@@ -105,10 +105,6 @@ if __name__ == "__main__":
         df_test = pd.concat([df_test, df_iter], ignore_index=True)
         # ***
 
-        # These models don't support standard validation metrics.
-        if options.estimation_model in ('xl', 'cf'):
-            continue
-
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
             logging.info(f'Iter {i+1}, Fold {k+1}')
@@ -135,6 +131,5 @@ if __name__ == "__main__":
     #df_all = df_ate.merge(df_pehe, on=['iter_id'])
     #print(df_all)
     #print(df_all.mean())
-
-    if df_val is not None:
-        df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)
+    
+    df_val.to_csv(os.path.join(options.output_path, f'{model_name}_val_metrics.csv'), index=False)

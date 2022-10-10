@@ -76,7 +76,7 @@ class SEvaluator():
         self.model_name = get_model_name(opt)
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.model_name}_params.csv'))
 
-    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -91,9 +91,10 @@ class SEvaluator():
         preds_filename_base = f'{self.model_name}_iter{iter_id}_fold{fold_id}'
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_filename_base}.npz'), allow_pickle=True)
 
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse', 'r2_score']
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse', 'r2_score'] + eval.metrics
         
         y_hats = preds['y_hat'].astype(float)
+        cate_hats = preds['cate_hat'].astype(float)
 
         test_results = []
         for p_id in self.df_params['id']:
@@ -102,7 +103,10 @@ class SEvaluator():
             test_mse = mse(y_hat, y_test_scaled)
             r2 = r2_score(y_test_scaled, y_hat)
 
-            result = [iter_id, fold_id, p_id, test_mse, r2]
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            test_metrics = eval.get_metrics(cate_hat)
+
+            result = [iter_id, fold_id, p_id, test_mse, r2] + test_metrics
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
@@ -128,7 +132,7 @@ class SEvaluator():
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if fold_id > 0:
-            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test, eval)
         else:
             return self._run_test(iter_id, y_tr, t_test, y_test, eval)
 

@@ -120,7 +120,7 @@ class TEvaluator():
         self.df_m1_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_m1_params.csv'))
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_cate_params.csv'))
 
-    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -136,13 +136,14 @@ class TEvaluator():
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
 
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_m0', 'mse_m1', 'r2_score_m0', 'r2_score_m1']
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_m0', 'mse_m1', 'r2_score_m0', 'r2_score_m1'] + eval.metrics
         m0_mse = {}
         m0_r2 = {}
         m1_mse = {}
         m1_r2 = {}
         y0_hats = preds['y0_hat'].astype(float)
         y1_hats = preds['y1_hat'].astype(float)
+        cate_hats = preds['cate_hat'].astype(float)
         # m0 and m1 share the same hyperparam search space (same models), so can do 1 loop instead of 2.
         for p0_id in self.df_m0_params['id']:
             m0_mse[p0_id] = mse(y0_hats[p0_id-1].reshape(-1, 1), y0_test)
@@ -153,7 +154,9 @@ class TEvaluator():
         
         test_results = []
         for p_id, p0_id, p1_id in zip(self.df_params['id'], self.df_params['m0'], self.df_params['m1']):
-            result = [iter_id, fold_id, p_id, m0_mse[p0_id], m1_mse[p1_id], m0_r2[p0_id], m1_r2[p1_id]]
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            test_metrics = eval.get_metrics(cate_hat)
+            result = [iter_id, fold_id, p_id, m0_mse[p0_id], m1_mse[p1_id], m0_r2[p0_id], m1_r2[p1_id]] + test_metrics
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
@@ -179,7 +182,7 @@ class TEvaluator():
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if fold_id > 0:
-            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test, eval)
         else:
             return self._run_test(iter_id, y_tr, t_test, y_test, eval)
 

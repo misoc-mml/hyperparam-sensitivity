@@ -38,6 +38,10 @@ def compare_metrics_all(cate_models, plugin_models, match_models, rscore_base_mo
     df_meta = _process_test_all(cate_models, base_dir, metrics)
     df_meta = _process_mse_all(df_meta, cate_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_all(df_meta, cate_models, base_dir, mode, metrics)
+
+    if 'policy' in metrics:
+        df_meta = _process_policy_all(df_meta, cate_models, base_dir, mode, metrics)
+
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
@@ -263,6 +267,35 @@ def _process_mse_all(df_main, cate_models, base_dir, mode, metrics):
         return df_mse
     else:
         return df_main.merge(df_mse, on=['name'])
+
+def _process_policy_all(df_main, cate_models, base_dir, mode, metrics):
+    pol_list = []
+    df_all = None
+    for cm in cate_models:
+        try:
+            df_base_test = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+        except:
+            print(f'{cm} is missing')
+            continue
+
+        df_base_val = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_val_metrics.csv'))
+        df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+        df_base_val_gr['pol_target'] = df_base_val_gr['policy']
+
+        for metric in metrics:
+            df_base_test[f'{metric}_target'] = df_base_test[metric]
+        metrics_target = [f'{metric}_target' for metric in metrics]
+            
+        df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+        df_all = pd.concat([df_all, df_base], ignore_index=True, join='inner')
+
+    pol_i = ut.fn_by_best(df_all, 'pol_target', metrics_target, mode, True)
+    pol_list.append(['all'] + pol_i)
+    
+    df_pol = pd.DataFrame(pol_list, columns=['name'] + [f'{metric}_pol' for metric in metrics])
+
+    return df_main.merge(df_pol, on=['name'])
 
 def _process_r2scores_meta_est(df_main, meta_models, base_models, base_dir, mode, metrics):
     r2_list = []

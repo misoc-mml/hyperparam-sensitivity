@@ -244,7 +244,7 @@ class IPSWSEvaluator():
         self.opt = opt
         self.df_params = pd.read_csv(os.path.join(self.opt.results_path, f'{self.opt.estimation_model}_{self.opt.base_model}_params.csv'))
     
-    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test):
+    def _run_valid(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if self.opt.scale_y:
             # Replicate the scaler
             scaler = get_scaler(self.opt.scaler)
@@ -256,10 +256,11 @@ class IPSWSEvaluator():
         if y_test_scaled.ndim == 1:
             y_test_scaled = y_test_scaled.reshape(-1, 1)
         
-        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_prop', 'mse_reg', 'r2_score_prop', 'r2_score_reg']
+        results_cols = ['iter_id', 'fold_id', 'param_id', 'mse_prop', 'mse_reg', 'r2_score_prop', 'r2_score_reg'] + eval.metrics
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}_fold{fold_id}'
 
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
+        cate_hats = preds['cate_hat'].astype(float)
         
         t_prob_hats = preds['t_prob_hat'].astype(float)
         y_hats = preds['y_hat'].astype(float)
@@ -277,7 +278,10 @@ class IPSWSEvaluator():
             reg_mse = mse(y_hat, y_test_scaled)
             reg_r2 = r2_score(y_test_scaled, y_hat)
 
-            result = [iter_id, fold_id, p_id, prop_mse, reg_mse, prop_r2, reg_r2]
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            test_metrics = eval.get_metrics(cate_hat)
+
+            result = [iter_id, fold_id, p_id, prop_mse, reg_mse, prop_r2, reg_r2] + test_metrics
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)
@@ -302,6 +306,6 @@ class IPSWSEvaluator():
 
     def run(self, iter_id, fold_id, y_tr, t_test, y_test, eval):
         if fold_id > 0:
-            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test)
+            return self._run_valid(iter_id, fold_id, y_tr, t_test, y_test, eval)
         else:
             return self._run_test(iter_id, y_tr, t_test, y_test, eval)

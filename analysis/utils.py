@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from scipy.stats import sem
+
 def _mean_std_str(mean, std):
     #return f'{mean:.3f} +/- {std:.3f}'
     return f'${mean:.3f}\pm{std:.3f}$'
@@ -88,7 +90,8 @@ def get_best_metric(df, col):
     iter_gr = df.groupby(['iter_id'], as_index=False)
     best_iter = iter_gr.apply(lambda x: x.loc[x[col].idxmin(), [col]])
     best_mean = np.mean(best_iter[col])
-    best_std = np.std(best_iter[col])
+    #best_std = np.std(best_iter[col])
+    best_std = sem(best_iter[col], axis=None)
 
     return _mean_std_str(best_mean, best_std)
 
@@ -101,7 +104,8 @@ def _metric_by_best(df, by, targets, lower_is_better):
         best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmax(), targets])
 
     best_mean = np.mean(best_by_iter[targets], axis=0)
-    best_std = np.std(best_by_iter[targets], axis=0)
+    #best_std = np.std(best_by_iter[targets], axis=0)
+    best_std = sem(best_by_iter[targets], axis=0)
 
     return _merge_scores(best_mean, best_std)
 

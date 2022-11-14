@@ -8,6 +8,10 @@ import os
 import logging
 import argparse
 
+# Limit the default number of threads (avoid uncontrolled CPU usage)
+n_threads = 1
+os.environ["OMP_NUM_THREADS"] = str(n_threads)
+
 from helpers.utils import init_logger
 from helpers.data import get_scaler
 from models.estimators import SSearch, TSearch, XSearch, DRSearch, DMLSearch, IPSWSearch, CausalForestSearch

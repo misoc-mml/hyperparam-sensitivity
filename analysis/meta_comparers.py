@@ -23,9 +23,9 @@ def compare_metrics_meta_est(cate_models, meta_models, base_models, plugin_model
 def compare_metrics_meta_base(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_meta_base(meta_models, base_models, base_dir, metrics)
-    df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
-    df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
-    df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
+    #df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    #df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
+    #df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
         df_cate = comp.compare_metrics(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
@@ -137,7 +137,7 @@ def _process_test_meta_est(meta_models, base_models, base_dir, metrics):
             except:
                 print(f'{model_name} is missing')
                 continue
-            df_mm = pd.concat([df_mm, df_base_test], ignore_index=True, join='inner')
+            df_mm = pd.concat([df_mm, df_base_test], ignore_index=True)
 
         best_metrics = [ut.get_best_metric(df_mm, metric) for metric in metrics]
         test_list.append([mm] + best_metrics)
@@ -156,7 +156,7 @@ def _process_test_meta_base(meta_models, base_models, base_dir, metrics):
             except:
                 print(f'{model_name} is missing')
                 continue
-            df_bm = pd.concat([df_bm, df_base_test], ignore_index=True, join='inner')
+            df_bm = pd.concat([df_bm, df_base_test], ignore_index=True)
         
         best_metrics = [ut.get_best_metric(df_bm, metric) for metric in metrics]
         test_list.append([bm] + best_metrics)
@@ -173,7 +173,7 @@ def _process_test_all(cate_models, base_dir, metrics):
         except:
             print(f'{cm} is missing')
             continue
-        df_all = pd.concat([df_all, df_base_test], ignore_index=True, join='inner')
+        df_all = pd.concat([df_all, df_base_test], ignore_index=True)
         
     best_metrics = [ut.get_best_metric(df_all, metric) for metric in metrics]
     test_list.append(['all'] + best_metrics)
@@ -209,11 +209,11 @@ def _process_mse_meta_est(df_main, meta_models, base_models, base_dir, mode, met
 
                 for metric in metrics:
                     df_base_test[f'{metric}_target'] = df_base_test[metric]
-                metrics_target = [f'{metric}_target' for metric in metrics]
             
                 df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-                df_mm = pd.concat([df_mm, df_base], ignore_index=True, join='inner')
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
 
+            metrics_target = [f'{metric}_target' for metric in metrics]
             mse_i = ut.fn_by_best(df_mm, 'mse_target', metrics_target, mode, True)
 
         mse_list.append([mm] + mse_i)
@@ -256,7 +256,7 @@ def _process_mse_all(df_main, cate_models, base_dir, mode, metrics):
         metrics_target = [f'{metric}_target' for metric in metrics]
             
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-        df_all = pd.concat([df_all, df_base], ignore_index=True, join='inner')
+        df_all = pd.concat([df_all, df_base], ignore_index=True)
 
     mse_i = ut.fn_by_best(df_all, 'mse_target', metrics_target, mode, True)
     mse_list.append(['all'] + mse_i)
@@ -288,7 +288,7 @@ def _process_policy_all(df_main, cate_models, base_dir, mode, metrics):
         metrics_target = [f'{metric}_target' for metric in metrics]
             
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-        df_all = pd.concat([df_all, df_base], ignore_index=True, join='inner')
+        df_all = pd.concat([df_all, df_base], ignore_index=True)
 
     pol_i = ut.fn_by_best(df_all, 'pol_target', metrics_target, mode, True)
     pol_list.append(['all'] + pol_i)
@@ -328,7 +328,7 @@ def _process_r2scores_meta_est(df_main, meta_models, base_models, base_dir, mode
                 metrics_target = [f'{metric}_target' for metric in metrics]
             
                 df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-                df_mm = pd.concat([df_mm, df_base], ignore_index=True, join='inner')
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
 
             r2_i = ut.fn_by_best(df_mm, 'r2_score_target', metrics_target, mode, False)
 
@@ -367,7 +367,7 @@ def _process_r2scores_all(df_main, cate_models, base_dir, mode, metrics):
         metrics_target = [f'{metric}_target' for metric in metrics]
             
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-        df_all = pd.concat([df_all, df_base], ignore_index=True, join='inner')
+        df_all = pd.concat([df_all, df_base], ignore_index=True)
 
     r2_i = ut.fn_by_best(df_all, 'r2_score_target', metrics_target, mode, False)
     r2_list.append(['all'] + r2_i)
@@ -397,10 +397,14 @@ def _process_mixed_meta_est(df_main, meta_models, base_models, base_dir, mode, m
                 # mixed = R^2 + ACC - MSE
                 df_base_val_gr['mixed'] = df_base_val_gr['reg_score'] + df_base_val_gr['prop_score'] - df_base_val_gr['final_score']
             
-                df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
-                df_mm = pd.concat([df_mm, df_base], ignore_index=True, join='inner')
+                for metric in metrics:
+                    df_base_test[f'{metric}_target'] = df_base_test[metric]
 
-            score_i = ut.fn_by_best(df_mm, 'mixed', metrics, mode, False)
+                df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+                df_mm = pd.concat([df_mm, df_base], ignore_index=True)
+
+            metrics_target = [f'{metric}_target' for metric in metrics]
+            score_i = ut.fn_by_best(df_mm, 'mixed', metrics_target, mode, False)
 
         score_list.append([mm] + score_i)
     
@@ -428,7 +432,7 @@ def _process_plugins_meta_est(df_main, plugin_models, meta_models, base_models, 
 
                 df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-                df_mm = pd.concat([df_mm, df_plugin], ignore_index=True, join='inner')
+                df_mm = pd.concat([df_mm, df_plugin], ignore_index=True)
 
             # Suffixes are applied only to duplicated column names.
             if 'ate' in metrics: # assume ['ate', 'pehe']
@@ -469,7 +473,7 @@ def _process_plugins_meta_base(df_main, plugin_models, meta_models, base_models,
 
                 df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-                df_bm = pd.concat([df_bm, df_plugin], ignore_index=True, join='inner')
+                df_bm = pd.concat([df_bm, df_plugin], ignore_index=True)
             
             # Suffixes are applied only to duplicated column names.
             if 'ate' in metrics: # assume ['ate', 'pehe']
@@ -513,7 +517,7 @@ def _process_plugins_all(df_main, plugin_models, cate_models, base_dir, plugin_d
 
             df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-            df_all = pd.concat([df_all, df_plugin], ignore_index=True, join='inner')
+            df_all = pd.concat([df_all, df_plugin], ignore_index=True)
             
         metrics_target = [f'{metric}_test_target' for metric in metrics]
             
@@ -551,7 +555,7 @@ def _process_matching_meta_est(df_main, ks, meta_models, base_models, base_dir, 
 
                 df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-                df_mm = pd.concat([df_mm, df_plugin], ignore_index=True, join='inner')
+                df_mm = pd.concat([df_mm, df_plugin], ignore_index=True)
 
             # Suffixes are applied only to duplicated column names.
             if 'ate' in metrics: # assume ['ate', 'pehe']
@@ -592,7 +596,7 @@ def _process_matching_meta_base(df_main, ks, meta_models, base_models, base_dir,
 
                 df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-                df_bm = pd.concat([df_bm, df_plugin], ignore_index=True, join='inner')
+                df_bm = pd.concat([df_bm, df_plugin], ignore_index=True)
             
             # Suffixes are applied only to duplicated column names.
             if 'ate' in metrics: # assume ['ate', 'pehe']
@@ -636,7 +640,7 @@ def _process_matching_all(df_main, ks, cate_models, base_dir, matching_dir, mode
 
             df_plugin = df_plugin_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
 
-            df_all = pd.concat([df_all, df_plugin], ignore_index=True, join='inner')
+            df_all = pd.concat([df_all, df_plugin], ignore_index=True)
             
         metrics_target = [f'{metric}_test_target' for metric in metrics]
             
@@ -672,7 +676,7 @@ def _process_rscores_meta_est(df_main, rscore_base_models, meta_models, base_mod
                 df_rscore_val_gr = df_rscore_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
 
                 df_rscore_test = df_rscore_val_gr.merge(df_base_test, on=['iter_id', 'param_id'])
-                df_mm = pd.concat([df_mm, df_rscore_test], ignore_index=True, join='inner')
+                df_mm = pd.concat([df_mm, df_rscore_test], ignore_index=True)
 
             rscore_i = ut.fn_by_best(df_mm, 'rscore', metrics, mode, False)
             scores_list.append([mm] + rscore_i)
@@ -701,7 +705,7 @@ def _process_rscores_meta_base(df_main, rscore_base_models, meta_models, base_mo
                 df_rscore_val_gr = df_rscore_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
 
                 df_rscore_test = df_rscore_val_gr.merge(df_base_test, on=['iter_id', 'param_id'])
-                df_bm = pd.concat([df_bm, df_rscore_test], ignore_index=True, join='inner')
+                df_bm = pd.concat([df_bm, df_rscore_test], ignore_index=True)
             
             rscore_i = ut.fn_by_best(df_bm, 'rscore', metrics, mode, False)
             scores_list.append([bm] + rscore_i)
@@ -728,7 +732,7 @@ def _process_rscores_all(df_main, rscore_base_models, cate_models, base_dir, rsc
             df_rscore_val_gr = df_rscore_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
 
             df_rscore_test = df_rscore_val_gr.merge(df_base_test, on=['iter_id', 'param_id'])
-            df_all = pd.concat([df_all, df_rscore_test], ignore_index=True, join='inner')
+            df_all = pd.concat([df_all, df_rscore_test], ignore_index=True)
             
         rscore_i = ut.fn_by_best(df_all, 'rscore', metrics, mode, False)
         scores_list.append(['all'] + rscore_i)

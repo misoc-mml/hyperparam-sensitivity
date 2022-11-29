@@ -49,10 +49,13 @@ def get_dataset(name, path, iters):
 
 def scale_x(X_train, X_test, opt, cont_vars):
     scaler_x = get_scaler(opt.scaler)
-    
-    # Scale only continuous features.
-    X_train[:, cont_vars] = scaler_x.fit_transform(X_train[:, cont_vars])
-    X_test[:, cont_vars] = scaler_x.transform(X_test[:, cont_vars])
+    if cont_vars:
+        # Scale only continuous features.
+        X_train[:, cont_vars] = scaler_x.fit_transform(X_train[:, cont_vars])
+        X_test[:, cont_vars] = scaler_x.transform(X_test[:, cont_vars])
+    else:
+        X_train = scaler_x.fit_transform(X_train)
+        X_test = scaler_x.transform(X_test)
     
     return X_train, X_test
 

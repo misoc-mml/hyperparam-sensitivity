@@ -61,9 +61,12 @@ def compare_risks_all(cate_models, plugin_models, match_models, rscore_base_mode
 
 def compare_correlations_all(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'corr'
-    df_meta = _process_test_all(cate_models, base_dir, metrics)
-    df_meta = _process_mse_all(df_meta, cate_models, base_dir, mode, metrics)
+    df_meta = _process_mse_all(None, cate_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_all(df_meta, cate_models, base_dir, mode, metrics)
+
+    if 'policy' in metrics:
+        df_meta = _process_policy_all(df_meta, cate_models, base_dir, mode, metrics)
+
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
@@ -260,6 +263,48 @@ def _process_mse_all(df_main, cate_models, base_dir, mode, metrics):
 
     mse_i = ut.fn_by_best(df_all, 'mse_target', metrics_target, mode, True)
     mse_list.append(['all'] + mse_i)
+    
+    df_mse = pd.DataFrame(mse_list, columns=['name'] + [f'{metric}_mse' for metric in metrics])
+
+    if df_main is None:
+        return df_mse
+    else:
+        return df_main.merge(df_mse, on=['name'])
+
+def _process_policy_meta_est(df_main, meta_models, base_models, base_dir, mode, metrics):
+    mse_list = []
+    for mm in meta_models:
+        df_mm = None
+
+    
+        for bm in base_models:
+            model_name = f'{mm}_{bm}'
+            try:
+                df_base_test = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+            except:
+                print(f'{model_name} is missing')
+                continue
+
+            df_base_val = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_val_metrics.csv'))
+            df_base_val_gr = df_base_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+
+            if mm == 'tl':
+                df_base_val_gr['mse_target'] = df_base_val_gr[['mse_m0', 'mse_m1']].mean(axis=1)
+            elif mm == 'ipsws':
+                df_base_val_gr['mse_target'] = df_base_val_gr[['mse_prop', 'mse_reg']].mean(axis=1)
+            else:
+                df_base_val_gr['mse_target'] = df_base_val_gr['mse']
+
+            for metric in metrics:
+                df_base_test[f'{metric}_target'] = df_base_test[metric]
+            
+            df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+            df_mm = pd.concat([df_mm, df_base], ignore_index=True)
+
+        metrics_target = [f'{metric}_target' for metric in metrics]
+        mse_i = ut.fn_by_best(df_mm, 'mse_target', metrics_target, mode, True)
+
+        mse_list.append([mm] + mse_i)
     
     df_mse = pd.DataFrame(mse_list, columns=['name'] + [f'{metric}_mse' for metric in metrics])
 

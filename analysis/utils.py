@@ -39,9 +39,13 @@ def _metric_risk(achieved, best):
 def _corr_with(df, by, targets):
     corr_iter = df.groupby(['iter_id'], as_index=False).corrwith(df[by])
     corr_mean = np.mean(corr_iter[targets], axis=0)
-    corr_std = np.std(corr_iter[targets], axis=0)
+    #corr_std = np.std(corr_iter[targets], axis=0)
+    corr_std = sem(corr_iter[targets], axis=0)
 
-    return _merge_scores(corr_mean, corr_std)
+    if isinstance(targets, list):
+        return _merge_scores(corr_mean, corr_std)
+    else:
+        return [_mean_std_str(corr_mean, corr_std)]
 
 def fn_by_best(df, by, targets, mode, lower_is_better):
     if mode == 'metric':

@@ -129,6 +129,62 @@ def compare_correlations_meta_base(cate_models, meta_models, base_models, plugin
     
     return df_meta
 
+def compare_test_correlations_est(cate_models, meta_models, base_models, base_dir, metrics):
+    res_list = []
+    for mm in meta_models:
+        df_mm = None
+        for bm in base_models:
+            model_name = f'{mm}_{bm}'
+            try:
+                df_base = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+            except:
+                print(f'{model_name} is missing')
+                continue
+            df_mm = pd.concat([df_mm, df_base[['iter_id'] + metrics]], ignore_index=True)
+        res_i = ut.fn_by_best(df_mm, metrics[0], metrics[1], 'corr', False)
+        res_list.append([mm] + res_i)
+
+    for cm in cate_models:
+        df_base = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+        res_i = ut.fn_by_best(df_base[['iter_id'] + metrics], metrics[0], metrics[1], 'corr', False)
+        res_list.append([cm] + res_i)
+
+    return pd.DataFrame(res_list, columns=['name', f"({','.join(metrics)})"])
+
+def compare_test_correlations_base(meta_models, base_models, base_dir, metrics):
+    res_list = []
+    for bm in base_models:
+        df_bm = None
+        for mm in meta_models:
+            model_name = f'{mm}_{bm}'
+            try:
+                df_base = pd.read_csv(os.path.join(base_dir, model_name, f'{model_name}_test_metrics.csv'))
+            except:
+                print(f'{model_name} is missing')
+                continue
+            df_bm = pd.concat([df_bm, df_base[['iter_id'] + metrics]], ignore_index=True)
+        res_i = ut.fn_by_best(df_bm, metrics[0], metrics[1], 'corr', False)
+        res_list.append([bm] + res_i)
+    
+    return pd.DataFrame(res_list, columns=['name', f"({','.join(metrics)})"])
+
+def compare_test_correlations_all(cate_models, base_dir, metrics):
+    df_all = None
+    res_list = []
+    for cm in cate_models:
+        try:
+            df_base = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+        except:
+            print(f'{cm} is missing')
+            continue
+        
+        df_all = pd.concat([df_all, df_base[['iter_id'] + metrics]], ignore_index=True)
+
+    res_i = ut.fn_by_best(df_all, metrics[0], metrics[1], 'corr', False)
+    res_list.append(['all'] + res_i)
+
+    return pd.DataFrame(res_list, columns=['name', f"({','.join(metrics)})"])
+
 def _process_test_meta_est(meta_models, base_models, base_dir, metrics):
     test_list = []
     for mm in meta_models:

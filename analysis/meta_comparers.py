@@ -23,9 +23,9 @@ def compare_metrics_meta_est(cate_models, meta_models, base_models, plugin_model
 def compare_metrics_meta_base(cate_models, meta_models, base_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_meta_base(meta_models, base_models, base_dir, metrics)
-    #df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
-    #df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
-    #df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
+    df_meta = _process_plugins_meta_base(df_meta, plugin_models, meta_models, base_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_meta_base(df_meta, match_models, meta_models, base_models, base_dir, match_dir, mode, metrics)
+    df_meta = _process_rscores_meta_base(df_meta, rscore_base_models, meta_models, base_models, base_dir, rscore_dir, mode, metrics)
 
     if cate_models:
         df_cate = comp.compare_metrics(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics)
@@ -45,6 +45,7 @@ def compare_metrics_all(cate_models, plugin_models, match_models, rscore_base_mo
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
+    #df_meta = _process_ensemble_all(df_meta, cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, mode, metrics)
     
     return df_meta
 
@@ -841,4 +842,57 @@ def _process_rscores_all(df_main, rscore_base_models, cate_models, base_dir, rsc
         df_rscore = pd.DataFrame(scores_list, columns=['name'] + [f'{metric}_{rs_name}' for metric in metrics])
         df_copy = df_copy.merge(df_rscore, on=['name'])
     
+    return df_copy
+
+def _process_ensemble_all(df_main, cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, mode, metrics):
+    df_copy = df_main.copy()
+    df_all = None
+    results = []
+    for cm in cate_models:
+        try:
+            df_base_test = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+        except:
+            print(f'{cm} is missing')
+            continue
+
+        df_base_test['ensemble_all'] = 0.0
+        df_base_test['ensemble_ate'] = 0.0
+        df_base_test['ensemble_pehe'] = 0.0
+
+        for pm in plugin_models:
+            df_plugin = pd.read_csv(os.path.join(plugin_dir, pm, f'{cm}_plugin_{pm}.csv'))
+            df_plugin_gr = df_plugin.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+            df_base_test['ensemble_all'] += df_plugin_gr['ate'] + df_plugin_gr['pehe']
+            df_base_test['ensemble_ate'] += df_plugin_gr['ate']
+            df_base_test['ensemble_pehe'] += df_plugin_gr['pehe']
+        
+        for k in match_models:
+            df_matching = pd.read_csv(os.path.join(match_dir, f'match_{k}k', f'{cm}_matching_match_{k}k.csv'))
+            df_matching_gr = df_matching.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+            df_base_test['ensemble_all'] += df_matching_gr['ate'] + df_matching_gr['pehe']
+            df_base_test['ensemble_ate'] += df_matching_gr['ate']
+            df_base_test['ensemble_pehe'] += df_matching_gr['pehe']
+        
+        for rs_bm in rscore_base_models:
+            rs_name = f'rs_{rs_bm}'
+            df_rscore = pd.read_csv(os.path.join(rscore_dir, rs_name, f'{cm}_r_score_{rs_name}.csv'))
+            df_rscore_gr = df_rscore.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+            # Subtract R-Score as we want all to be "smaller is better".
+            df_base_test['ensemble_all'] -= df_rscore_gr['rscore']
+            df_base_test['ensemble_ate'] -= df_rscore_gr['rscore']
+            df_base_test['ensemble_pehe'] -= df_rscore_gr['rscore']
+
+        df_all = pd.concat([df_all, df_base_test], ignore_index=True)
+    
+    result_all = ut.fn_by_best(df_all, 'ensemble_all', metrics, mode, True)
+    result_ate = ut.fn_by_best(df_all, 'ensemble_ate', metrics, mode, True)
+    result_pehe = ut.fn_by_best(df_all, 'ensemble_pehe', metrics, mode, True)
+
+    results.append(['all'] + result_all + result_ate + result_pehe)
+
+    cols = [f'{metric}_ensemble_{en_type}' for en_type in ['all', 'ate', 'pehe'] for metric in metrics]
+
+    df_result = pd.DataFrame(results, columns=['name'] + cols)
+    df_copy = df_copy.merge(df_result, on=['name'])
+
     return df_copy

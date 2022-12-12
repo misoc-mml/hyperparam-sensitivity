@@ -57,17 +57,26 @@ def get_params(name):
     else:
         raise ValueError("Unrecognised 'get_params' key.")
 
-def get_default_params(name):
+def get_default_params(name, ds):
     if name == 'l1':
         return {'alpha': 1, 'max_iter': 1000}
     elif name == 'l2':
         return {'alpha': 1, 'max_iter': 1000}
     elif name == 'dt':
-        return {'max_depth': 20, 'min_samples_leaf': 1}
+        if ds == 'news':
+            return {'max_depth': 10, 'min_samples_leaf': 1}
+        else:
+            return {'max_depth': 20, 'min_samples_leaf': 1}
     elif name == 'rf':
-        return {'max_depth': 20, 'min_samples_leaf': 1}
+        if ds == 'news':
+            return {'max_depth': 10, 'min_samples_leaf': 1}
+        else:
+            return {'max_depth': 20, 'min_samples_leaf': 1}
     elif name == 'et':
-        return {'max_depth': 20, 'min_samples_leaf': 1}
+        if ds == 'news':
+            return {'max_depth': 10, 'min_samples_leaf': 1}
+        else:
+            return {'max_depth': 20, 'min_samples_leaf': 1}
     elif name == 'kr':
         return {"alpha": 1, "gamma": 1, "kernel": "poly", "degree": 3}
     elif name == 'cb':
@@ -75,7 +84,10 @@ def get_default_params(name):
     elif name == 'lgbm':
         return {"max_depth": 10, "reg_lambda": 0.1}
     elif name == 'cf':
-        return {'max_depth': 20, 'min_samples_leaf': 1}
+        if ds == 'news':
+            return {'max_depth': 10, 'min_samples_leaf': 1}
+        else:
+            return {'max_depth': 20, 'min_samples_leaf': 1}
     else:
         raise ValueError("Unrecognised 'get_default_params' key.")
 

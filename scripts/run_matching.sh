@@ -10,4 +10,10 @@ do
 
     MID_DIR="jobs"
     python ../make_matching.py --data_path ../datasets/JOBS --dtype jobs --sf ../datasets/JOBS/jobs_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/match_${N_VAL}k --knn $N_VAL --n_jobs 10
+
+    MID_DIR="twins"
+    python ../make_matching.py --data_path ../datasets/TWINS/csv --dtype twins --sf ../datasets/TWINS/csv/twins_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/match_${N_VAL}k --knn $N_VAL --n_jobs 10
+
+    MID_DIR="news"
+    python ../make_matching.py --data_path ../datasets/NEWS --dtype news --sf ../datasets/NEWS/news_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/match_${N_VAL}k --knn $N_VAL --n_jobs 10
 done

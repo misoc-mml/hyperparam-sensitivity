@@ -1,22 +1,25 @@
 ITERS=10
 # Options: sl, tl
-MODEL="sl"
-BASE_MODELS=("dt" "cb" "lgbm")
-MID_DIR="run1"
+MODELS=("sl" "tl")
+BASE_MODELS=("dt" "kr" "lgbm")
 
 
-for BASE_MODEL in ${BASE_MODELS[@]}
+for MODEL in ${MODELS[@]}
 do
-    echo ${MODEL}_${BASE_MODEL}
+    for BASE_MODEL in ${BASE_MODELS[@]}
+    do
+        echo ${MODEL}_${BASE_MODEL}
 
-    python ../make_plugin.py --data_path ../datasets/IHDP --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5
-done
+        MID_DIR="ihdp"
+        python ../make_plugin.py --data_path ../datasets/IHDP --dtype ihdp --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5 --n_jobs 10
 
+        MID_DIR="jobs"
+        python ../make_plugin.py --data_path ../datasets/JOBS --dtype jobs --sf ../datasets/JOBS/jobs_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5 --n_jobs 10
 
-MODEL="tl"
-for BASE_MODEL in ${BASE_MODELS[@]}
-do
-    echo ${MODEL}_${BASE_MODEL}
+        MID_DIR="twins"
+        python ../make_plugin.py --data_path ../datasets/TWINS/csv --dtype twins --sf ../datasets/TWINS/csv/twins_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5 --n_jobs 10
 
-    python ../make_plugin.py --data_path ../datasets/IHDP --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5
+        MID_DIR="news"
+        python ../make_plugin.py --data_path ../datasets/NEWS --dtype news --sf ../datasets/NEWS/news_splits_10iters_10folds.npz --iters $ITERS -o ../results/scorers/${MID_DIR}/${MODEL}_${BASE_MODEL} --em $MODEL --bm $BASE_MODEL --cv 5 --n_jobs 10
+    done
 done

@@ -1,13 +1,13 @@
 ITERS=1
 DEBUG_DIR="debug"
-META_MODEL="sl"
-BASE_MODEL="l1"
+META_MODEL="dmls"
+BASE_MODEL="dt"
 
 # With Tensorflow
-#python ../make_predictions_tf.py --data_path ../datasets/IHDP --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/predictions/${DEBUG_DIR} --scale_y --em $META_MODEL --bm $BASE_MODEL
+#python ../make_predictions_tf.py --data_path ../datasets/IHDP --dtype ihdp --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/predictions/${DEBUG_DIR} --scale_y --em $META_MODEL --bm $BASE_MODEL
 
 # No Tensorflow
-#python ../make_predictions.py --data_path ../datasets/IHDP --dtype ihdp --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/predictions/${DEBUG_DIR} --em $META_MODEL --bm $BASE_MODEL #--scale_y
+python ../make_predictions.py --data_path ../datasets/IHDP --dtype ihdp --sf ../datasets/IHDP/ihdp_splits_10iters_10folds.npz --iters $ITERS -o ../results/predictions/${DEBUG_DIR} --em $META_MODEL --bm $BASE_MODEL
 
 #python ../make_predictions.py --data_path ../datasets/JOBS --dtype jobs --sf ../datasets/JOBS/jobs_splits_10iters_10folds.npz --iters $ITERS -o ../results/predictions/${DEBUG_DIR} --em $META_MODEL --bm $BASE_MODEL
 

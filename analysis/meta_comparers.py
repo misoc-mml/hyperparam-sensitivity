@@ -45,7 +45,6 @@ def compare_metrics_all(cate_models, plugin_models, match_models, rscore_base_mo
     df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
     df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
     df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
-    #df_meta = _process_ensemble_all(df_meta, cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, mode, metrics)
     
     return df_meta
 

@@ -3,9 +3,18 @@ import pandas as pd
 
 from scipy.stats import sem
 
+# ['mean', 'latex', 'text']
+RESULTS = 'latex'
+
 def _mean_std_str(mean, std):
-    #return f'{mean:.3f} +/- {std:.3f}'
-    return f'${mean:.3f}\pm{std:.3f}$'
+    if RESULTS == 'latex':
+        return f'${mean:.3f}\pm{std:.3f}$'
+    elif RESULTS == 'text':
+        return f'{mean:.3f} +/- {std:.3f}'
+    elif RESULTS == 'mean':
+        return mean
+    else:
+        return f'{mean:.3f} ({std:.3f})'
 
 def _merge_scores(scores1, scores2):
     return [_mean_std_str(s1, s2) for s1, s2 in zip(scores1, scores2)]
@@ -39,7 +48,6 @@ def _metric_risk(achieved, best):
 def _corr_with(df, by, targets):
     corr_iter = df.groupby(['iter_id'], as_index=False).corrwith(df[by])
     corr_mean = np.mean(corr_iter[targets], axis=0)
-    #corr_std = np.std(corr_iter[targets], axis=0)
     corr_std = sem(corr_iter[targets], axis=0)
 
     if isinstance(targets, list):
@@ -94,7 +102,6 @@ def get_best_metric(df, col):
     iter_gr = df.groupby(['iter_id'], as_index=False)
     best_iter = iter_gr.apply(lambda x: x.loc[x[col].idxmin(), [col]])
     best_mean = np.mean(best_iter[col])
-    #best_std = np.std(best_iter[col])
     best_std = sem(best_iter[col], axis=None)
 
     return _mean_std_str(best_mean, best_std)
@@ -108,7 +115,6 @@ def _metric_by_best(df, by, targets, lower_is_better):
         best_by_iter = iter_gr.apply(lambda x: x.loc[x[by].idxmax(), targets])
 
     best_mean = np.mean(best_by_iter[targets], axis=0)
-    #best_std = np.std(best_by_iter[targets], axis=0)
     best_std = sem(best_by_iter[targets], axis=0)
 
     return _merge_scores(best_mean, best_std)

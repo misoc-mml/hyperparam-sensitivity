@@ -1,9 +1,10 @@
 # Hyperparameter Tuning and Model Evaluation in Causal Effect Estimation
-
 Investigating the interplay between causal estimators, ML base learners, hyperparameters and model evaluation metrics.
 
 ## Paper
-This code accompanies the paper _Hyperparameter Tuning and Model Evaluation in Causal Effect Estimation_ [arxiv](https://arxiv.org/abs/2303.01412).
+This code accompanies the paper:
+
+D. Machlanski, S. Samothrakis, and P. Clarke, ‘Hyperparameter Tuning and Model Evaluation in Causal Effect Estimation’. arXiv, Mar. 02, 2023. doi: 10.48550/arXiv.2303.01412. [link](https://arxiv.org/abs/2303.01412).
 
 ## Data and Results
 All datasets and results (in progress) are available [here](https://essexuniversity.box.com/s/xi6ptui0162dlcaokg8vv0274napxcsi).
@@ -42,8 +43,8 @@ The following description explains only the most important files and directories
     ├── environment_tf.yml                  <- As above but with Tensorflow (required to run neural networks).
     │
     ├── analysis
-    │   ├── compare_save.py                 <- Post-processes 'results' into CSV files.
-    │   ├── tables                          <- CSV from above are stored here.
+    │   ├── compare_save_xxx.py             <- Post-processes 'results' into CSV files.
+    │   ├── tables                          <- CSVs from above are stored here.
     │   ├── utils.py                        <- Important functions used by `compare_save.py'.
     │   ├── plot_estimators.ipynb           <- Visualise performance of CATE estimators.
     │   ├── plot_hyperparams.ipynb          <- Visualise performance against types of hyperparameters.
@@ -60,10 +61,10 @@ The following description explains only the most important files and directories
     │   ├── data                            <- Models for datasets.
     │   ├── estimators                      <- Implementations of CATE estimators.
     │   ├── estimators_tf                   <- Code for Neural Networks (Tensorflow).
-    │   └── scorers                         <- The original, immutable data dump.
+    │   └── scorers                         <- Implementations of learning-based metrics.
     │
     ├── results
-    │   ├── metrics                         <- Conventional, non-learning metrics (MSE, R^2).
+    │   ├── metrics                         <- Conventional, non-learning metrics (MSE, R^2, PEHE, etc.).
     │   ├── predictions                     <- Predicted outcomes and CATEs.
     │   ├── scorers                         <- Predictions of scorers (plugin, matching and rscore).
     │   └── scores                          <- Actual scores (combines 'predictions' and 'scorers').

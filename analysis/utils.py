@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.stats import sem
 
 # ['mean', 'latex', 'text']
-RESULTS = 'latex'
+RESULTS = 'mean'
 
 def _mean_std_str(mean, std):
     if RESULTS == 'latex':

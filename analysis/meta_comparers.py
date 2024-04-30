@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 
 import utils as ut
 import comparers as comp
@@ -36,6 +37,21 @@ def compare_metrics_meta_base(cate_models, meta_models, base_models, plugin_mode
 def compare_metrics_all(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
     mode = 'metric'
     df_meta = _process_test_all(cate_models, base_dir, metrics)
+    df_meta = _process_mse_all(df_meta, cate_models, base_dir, mode, metrics)
+    df_meta = _process_r2scores_all(df_meta, cate_models, base_dir, mode, metrics)
+
+    if 'policy' in metrics:
+        df_meta = _process_policy_all(df_meta, cate_models, base_dir, mode, metrics)
+
+    df_meta = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
+    df_meta = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
+    df_meta = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
+    
+    return df_meta
+
+def compare_metrics_all_val(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
+    mode = 'metric'
+    df_meta = _process_val_all(cate_models, base_dir, metrics)
     df_meta = _process_mse_all(df_meta, cate_models, base_dir, mode, metrics)
     df_meta = _process_r2scores_all(df_meta, cate_models, base_dir, mode, metrics)
 
@@ -238,6 +254,31 @@ def _process_test_all(cate_models, base_dir, metrics):
     test_list.append(['all'] + best_metrics)
     
     metrics_test = [f'{metric}_test' for metric in metrics]
+    return pd.DataFrame(test_list, columns=['name'] + metrics_test)
+
+def _mean_target_by_lowest(df, by, target):
+    best = df.apply(lambda x: x.loc[x[by].idxmin(), [target]])
+    return np.mean(best[target])
+
+def _process_val_all(cate_models, base_dir, metrics):
+    test_list = []
+    df_all = None
+    for cm in cate_models:
+        try:
+            df_test = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_test_metrics.csv'))
+            df_val = pd.read_csv(os.path.join(base_dir, cm, f'{cm}_val_metrics.csv'))
+            df_val_gr = df_val.groupby(['iter_id', 'param_id'], as_index=False).mean().drop(columns=['fold_id'])
+            df_base = df_val_gr.merge(df_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
+        except:
+            print(f'{cm} is missing')
+            continue
+        df_all = pd.concat([df_all, df_base], ignore_index=True)
+
+    iter_all = df_all.groupby(['iter_id'], as_index=False)
+    best_metrics = [_mean_target_by_lowest(iter_all, f'{metric}_val', f'{metric}_test') for metric in metrics]
+    test_list.append(['all'] + best_metrics)
+    
+    metrics_test = [f'{metric}_val' for metric in metrics]
     return pd.DataFrame(test_list, columns=['name'] + metrics_test)
 
 def _process_mse_meta_est(df_main, meta_models, base_models, base_dir, mode, metrics):

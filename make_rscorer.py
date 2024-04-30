@@ -78,14 +78,15 @@ if __name__ == "__main__":
 
     scorer = RScorerWrapper(options)
 
-    base_scores = []
-    base_scores_cols = ['iter_id', 'fold_id', 'base_score']
+    base_scores_val = []
+    base_scores_test = []
 
     # Data iterations
     for i in range(n_iters):
-        train, _ = dataset._get_train_test(i)
+        train, test = dataset._get_train_test(i)
 
         X_tr, t_tr, y_tr = dataset.get_xty(train)
+        X_test, t_test, y_test = dataset.get_xty(test)
 
         # CV iterations
         for k, (train_idx, valid_idx) in enumerate(zip(splits['train'][i], splits['valid'][i])):
@@ -98,9 +99,18 @@ if __name__ == "__main__":
             # Scale train/val AFTER the split.
             X_tr_fold, X_val_fold = scale_x(X_tr_fold, X_val_fold, options, dataset.contfeats)
 
-            (Y_res, T_res), base_score = scorer.run(X_val_fold, t_val_fold, y_val_fold)
+            (Y_res, T_res), base_score_val = scorer.run(X_val_fold, t_val_fold, y_val_fold)
 
             np.savez_compressed(os.path.join(options.output_path, f'rs_{options.base_model}_iter{i+1}_fold{k+1}'), y_res=Y_res, t_res=T_res)
-            base_scores.append([i+1, k+1, base_score])
+            base_scores_val.append([i+1, k+1, base_score_val])
+        
+        # Scale train/test.
+        X_tr_scaled, X_test_scaled = scale_x(X_tr, X_test, options, dataset.contfeats)
+
+        (Y_res, T_res), base_score_test = scorer.run(X_test_scaled, t_test, y_test)
+
+        np.savez_compressed(os.path.join(options.output_path, f'rs_{options.base_model}_iter{i+1}'), y_res=Y_res, t_res=T_res)
+        base_scores_test.append([i+1, base_score_test])
     
-    pd.DataFrame(base_scores, columns=base_scores_cols).to_csv(os.path.join(options.output_path, f'rs_{options.base_model}_base_scores.csv'), index=False)
+    pd.DataFrame(base_scores_val, columns=['iter_id', 'fold_id', 'base_score']).to_csv(os.path.join(options.output_path, f'rs_{options.base_model}_base_scores.csv'), index=False)
+    pd.DataFrame(base_scores_test, columns=['iter_id', 'base_score']).to_csv(os.path.join(options.output_path, f'rs_{options.base_model}_base_scores_test.csv'), index=False)

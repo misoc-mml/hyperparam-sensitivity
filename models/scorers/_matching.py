@@ -47,8 +47,11 @@ class MatchingEvaluator():
     def __init__(self, opt):
         self.opt = opt
     
-    def get_cate(self, iter, fold):
-        arr = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter}_fold{fold}.npz'), allow_pickle=True)
+    def get_cate(self, iter, fold=0):
+        path_name = f'{self.opt.scorer_name}_iter{iter}'
+        path_name += f'_fold{fold}.csv' if fold > 0 else '.npz'
+
+        arr = np.load(os.path.join(self.opt.scorer_path, path_name), allow_pickle=True)
         return arr['cate_hat'].reshape(-1, 1).astype(float)
 
     def score(self, est, iter_id, fold_id):
@@ -70,4 +73,25 @@ class MatchingEvaluator():
             test_results.append(result)
         
         results_cols = ['iter_id', 'fold_id', 'param_id', 'ate', 'pehe']
+        return pd.DataFrame(test_results, columns=results_cols)
+
+    def score_test(self, est, iter_id):
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}.npz'
+
+        preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
+        cate_test = self.get_cate(iter_id)
+
+        cate_hats = preds['cate_hat'].astype(float)
+
+        test_results = []
+        for p_id in est.df_params['id']:
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+
+            test_pehe = pehe(cate_test, cate_hat)
+            test_ate = abs_ate(cate_test, cate_hat)
+
+            result = [iter_id, p_id, test_ate, test_pehe]
+            test_results.append(result)
+        
+        results_cols = ['iter_id', 'param_id', 'ate', 'pehe']
         return pd.DataFrame(test_results, columns=results_cols)

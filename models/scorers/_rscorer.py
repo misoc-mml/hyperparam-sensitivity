@@ -30,7 +30,8 @@ class RScorerWrapper():
 class RScorerEvaluator():
     def __init__(self, opt):
         self.opt = opt
-        self.df_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores.csv'))
+        self.val_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores.csv'))
+        self.test_base_scores = pd.read_csv(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_base_scores_test.csv'))
 
     def score(self, est, iter_id, fold_id):
         filename = f'{get_model_name(self.opt)}_iter{iter_id}_fold{fold_id}.npz'
@@ -38,7 +39,7 @@ class RScorerEvaluator():
         preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
         cate_hats = preds['cate_hat'].astype(float)
 
-        base_score = float(self.df_base_scores.loc[(self.df_base_scores['iter_id'] == iter_id) & (self.df_base_scores['fold_id'] == fold_id), 'base_score'])
+        base_score = float(self.val_base_scores.loc[(self.val_base_scores['iter_id'] == iter_id) & (self.val_base_scores['fold_id'] == fold_id), 'base_score'])
         res = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}_fold{fold_id}.npz'), allow_pickle=True)
 
         test_results = []
@@ -51,6 +52,27 @@ class RScorerEvaluator():
             test_results.append(result)
         
         results_cols = ['iter_id', 'fold_id', 'param_id', 'rscore']
+        return pd.DataFrame(test_results, columns=results_cols)
+
+    def score_test(self, est, iter_id):
+        filename = f'{get_model_name(self.opt)}_iter{iter_id}.npz'
+
+        preds = np.load(os.path.join(self.opt.results_path, filename), allow_pickle=True)
+        cate_hats = preds['cate_hat'].astype(float)
+
+        base_score = float(self.test_base_scores.loc[(self.test_base_scores['iter_id'] == iter_id), 'base_score'])
+        res = np.load(os.path.join(self.opt.scorer_path, f'{self.opt.scorer_name}_iter{iter_id}.npz'), allow_pickle=True)
+
+        test_results = []
+        for p_id in est.df_params['id']:
+            cate_hat = cate_hats[p_id-1].reshape(-1, 1)
+            
+            _score = rscore(cate_hat, res['y_res'], res['t_res'], base_score)
+
+            result = [iter_id, p_id, _score]
+            test_results.append(result)
+        
+        results_cols = ['iter_id', 'param_id', 'rscore']
         return pd.DataFrame(test_results, columns=results_cols)
 
 class RScorerConverter():

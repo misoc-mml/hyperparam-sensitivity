@@ -88,7 +88,8 @@ if __name__ == "__main__":
     scorer = get_scorer(options)
     evaluator = get_evaluator(options)
 
-    df_all = None
+    df_val_all = None
+    df_test_all = None
 
     # Data iterations
     for i in range(n_iters):
@@ -96,7 +97,11 @@ if __name__ == "__main__":
         for k, _ in enumerate(splits['train'][i]):
             logging.info(f'Iter {i+1}, Fold {k+1}')
             df_fold = scorer.score(evaluator, i+1, k+1)
-            df_all = pd.concat([df_all, df_fold], ignore_index=True)
+            df_val_all = pd.concat([df_val_all, df_fold], ignore_index=True)
+        
+        df_iter = scorer.score_test(evaluator, i+1)
+        df_test_all = pd.concat([df_test_all, df_iter], ignore_index=True)
 
     model_name = get_model_name(options)
-    df_all.to_csv(os.path.join(options.output_path, f'{model_name}_{options.scorer_type}_{options.scorer_name}.csv'), index=False)
+    df_val_all.to_csv(os.path.join(options.output_path, f'{model_name}_{options.scorer_type}_{options.scorer_name}.csv'), index=False)
+    df_test_all.to_csv(os.path.join(options.output_path, f'{model_name}_{options.scorer_type}_{options.scorer_name}_test.csv'), index=False)

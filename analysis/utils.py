@@ -106,6 +106,19 @@ def get_best_metric(df, col):
 
     return _mean_std_str(best_mean, best_std)
 
+def get_best_metric_iter(df, col, lower_is_better=True):
+    return get_best_metric_by_iter(df, col, col, lower_is_better)
+
+def get_best_metric_by_iter(df, by, col, lower_is_better=True):
+    iter_gr = df.groupby(['iter_id'], as_index=False)
+
+    # return all iterations (to show variance in the plots)
+    # select only the column of interest (metric)
+    if lower_is_better:
+        return iter_gr.apply(lambda x: x.loc[x[by].idxmin(), [col]])[col].to_numpy()
+    else:
+        return iter_gr.apply(lambda x: x.loc[x[by].idxmax(), [col]])[col].to_numpy()
+
 def _metric_by_best(df, by, targets, lower_is_better):
     iter_gr = df.groupby(['iter_id'], as_index=False)
 

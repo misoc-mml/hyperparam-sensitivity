@@ -287,19 +287,40 @@ class IPSWSEvaluator():
         return pd.DataFrame(test_results, columns=results_cols)
     
     def _run_test(self, iter_id, y_tr, t_test, y_test, eval):
-        results_cols = ['iter_id', 'param_id'] + eval.metrics + ['ate_hat']
+        if self.opt.scale_y:
+            # Replicate the scaler
+            scaler = get_scaler(self.opt.scaler)
+            scaler.fit(y_tr)
+            y_test_scaled = scaler.transform(y_test)
+        else:
+            y_test_scaled = y_test
+        
+        if y_test_scaled.ndim == 1:
+            y_test_scaled = y_test_scaled.reshape(-1, 1)
+
+        results_cols = ['iter_id', 'param_id', 'mse_prop', 'mse_reg', 'r2_score_prop', 'r2_score_reg'] + eval.metrics + ['ate_hat']
         preds_cate_filename_base = f'{self.opt.estimation_model}_{self.opt.base_model}_iter{iter_id}'
 
         preds = np.load(os.path.join(self.opt.results_path, f'{preds_cate_filename_base}.npz'), allow_pickle=True)
         cate_hats = preds['cate_hat'].astype(float)
 
+        t_prob_hats = preds['t_prob_hat'].astype(float)
+        y_hats = preds['y_hat'].astype(float)
+
         test_results = []
         for p_id in self.df_params['id']:
+            prop_mse = mse(t_prob_hats[p_id-1].reshape(-1, 2)[:, 1:], t_test)
+            prop_r2 = r2_score(t_test, t_prob_hats[p_id-1].reshape(-1, 2)[:, 1:])
+
+            y_hat = y_hats[p_id-1].reshape(-1, 1)
+            reg_mse = mse(y_hat, y_test_scaled)
+            reg_r2 = r2_score(y_test_scaled, y_hat)
+
             cate_hat = cate_hats[p_id-1].reshape(-1, 1)
             ate_hat = np.mean(cate_hat)
             test_metrics = eval.get_metrics(cate_hat)
 
-            result = [iter_id, p_id] + test_metrics + [ate_hat]
+            result = [iter_id, p_id, prop_mse, reg_mse, prop_r2, reg_r2] + test_metrics + [ate_hat]
             test_results.append(result)
         
         return pd.DataFrame(test_results, columns=results_cols)

@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 import utils as ut
 
@@ -36,7 +37,7 @@ def _process_val_all(cate_models, base_dir, metrics):
     iter_all = df_all.groupby(['iter_id'], as_index=False)
     best_metrics = [_target_by_lowest(iter_all, f'{metric}_val', f'{metric}_test') for metric in metrics]
 
-    df = pd.DataFrame(best_metrics, columns=metrics)
+    df = pd.DataFrame(np.array(best_metrics).T, columns=metrics)
     df['name_s'] = 'Oracle'
     df['name_l'] = 'Oracle'
 
@@ -76,7 +77,7 @@ def _process_mse_all(cate_models, base_dir, metrics):
 
     mse_i = [ut.get_best_metric_by_iter(df_all, 'mse_target', metric, True) for metric in metrics_target]
 
-    df = pd.DataFrame(mse_i, columns=metrics)
+    df = pd.DataFrame(np.array(mse_i).T, columns=metrics)
     df['name_s'] = 'MSE'
     df['name_l'] = 'MSE'
 
@@ -104,7 +105,9 @@ def _process_policy_all(cate_models, base_dir, metrics):
         df_all = pd.concat([df_all, df_base], ignore_index=True)
 
     pol_i = [ut.get_best_metric_by_iter(df_all, 'pol_target', metric, True) for metric in metrics_target]
-    df_pol = pd.DataFrame(pol_i, columns=metrics)
+    df_pol = pd.DataFrame(np.array(pol_i).T, columns=metrics)
+    df_pol['name_s'] = 'policy'
+    df_pol['name_l'] = 'policy'
 
     return df_pol
 
@@ -140,7 +143,9 @@ def _process_r2scores_all(cate_models, base_dir, metrics):
         df_all = pd.concat([df_all, df_base], ignore_index=True)
 
     r2_i = [ut.get_best_metric_by_iter(df_all, 'r2_score_target', metric, False) for metric in metrics_target]
-    df_r2 = pd.DataFrame(r2_i, columns=metrics)
+    df_r2 = pd.DataFrame(np.array(r2_i).T, columns=metrics)
+    df_r2['name_s'] = 'R2'
+    df_r2['name_l'] = 'R2'
 
     return df_r2
 
@@ -173,11 +178,11 @@ def _process_plugins_all(plugin_models, cate_models, base_dir, plugin_dir, metri
         plugin_ate_i = [ut.get_best_metric_by_iter(df_all, 'ate_val_target', metric, True) for metric in metrics_target]
         plugin_pehe_i = [ut.get_best_metric_by_iter(df_all, 'pehe_val_target', metric, True) for metric in metrics_target]
 
-        df_ate = pd.DataFrame(plugin_ate_i, columns=metrics)
+        df_ate = pd.DataFrame(np.array(plugin_ate_i).T, columns=metrics)
         df_ate['name_s'] = 'plugin_ate'
         df_ate['name_l'] = f'plugin_ate_{pm}'
 
-        df_pehe = pd.DataFrame(plugin_pehe_i, columns=metrics)
+        df_pehe = pd.DataFrame(np.array(plugin_pehe_i).T, columns=metrics)
         df_pehe['name_s'] = 'plugin_pehe'
         df_pehe['name_l'] = f'plugin_pehe_{pm}'
 
@@ -214,11 +219,11 @@ def _process_matching_all(ks, cate_models, base_dir, matching_dir, metrics):
         plugin_ate_i = [ut.get_best_metric_by_iter(df_all, 'ate_val_target', metric, True) for metric in metrics_target]
         plugin_pehe_i = [ut.get_best_metric_by_iter(df_all, 'pehe_val_target', metric, True) for metric in metrics_target]
 
-        df_ate = pd.DataFrame(plugin_ate_i, columns=metrics)
+        df_ate = pd.DataFrame(np.array(plugin_ate_i).T, columns=metrics)
         df_ate['name_s'] = 'matching_ate'
         df_ate['name_l'] = f'matching_ate_{k}'
 
-        df_pehe = pd.DataFrame(plugin_pehe_i, columns=metrics)
+        df_pehe = pd.DataFrame(np.array(plugin_pehe_i).T, columns=metrics)
         df_pehe['name_s'] = 'plugin_pehe'
         df_pehe['name_l'] = f'plugin_pehe_{k}'
 
@@ -246,7 +251,7 @@ def _process_rscores_all(rscore_base_models, cate_models, base_dir, rscore_dir, 
             
         rscore_i = [ut.get_best_metric_by_iter(df_all, 'rscore', metric, False) for metric in metrics]
         
-        df_rscore = pd.DataFrame(rscore_i, columns=metrics)
+        df_rscore = pd.DataFrame(np.array(rscore_i).T, columns=metrics)
         df_rscore['name_s'] = 'rscore'
         df_rscore['name_l'] = f'rscore_{rs_bm}'
 

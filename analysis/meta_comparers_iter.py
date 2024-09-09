@@ -1,25 +1,20 @@
 import os
 import pandas as pd
-import numpy as np
-
 import utils as ut
-import comparers as comp
 
 def compare_metrics_all_val(cate_models, plugin_models, match_models, rscore_base_models, base_dir, plugin_dir, match_dir, rscore_dir, metrics):
-    mode = 'metric'
-
     df_oracle = _process_val_all(cate_models, base_dir, metrics)
-    df_mse = _process_mse_all(df_meta, cate_models, base_dir, mode, metrics)
-    df_r2 = _process_r2scores_all(df_meta, cate_models, base_dir, mode, metrics)
-
-    if 'policy' in metrics:
-        df_pol = _process_policy_all(df_meta, cate_models, base_dir, mode, metrics)
-
-    df_plug = _process_plugins_all(df_meta, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics)
-    df_match = _process_matching_all(df_meta, match_models, cate_models, base_dir, match_dir, mode, metrics)
-    df_rscore = _process_rscores_all(df_meta, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics)
+    df_mse = _process_mse_all(cate_models, base_dir, metrics)
+    df_r2 = _process_r2scores_all(cate_models, base_dir, metrics)
+    df_plug = _process_plugins_all(plugin_models, cate_models, base_dir, plugin_dir, metrics)
+    df_match = _process_matching_all(match_models, cate_models, base_dir, match_dir, metrics)
+    df_rscore = _process_rscores_all(rscore_base_models, cate_models, base_dir, rscore_dir, metrics)
     
-    return df_meta
+    if 'policy' in metrics:
+        df_pol = _process_policy_all(cate_models, base_dir, metrics)
+        return pd.concat([df_oracle, df_mse, df_r2, df_plug, df_match, df_rscore, df_pol], axis=0)
+    else:
+        return pd.concat([df_oracle, df_mse, df_r2, df_plug, df_match, df_rscore], axis=0)
 
 def _target_by_lowest(df, by, target):
     best = df.apply(lambda x: x.loc[x[by].idxmin(), [target]])
@@ -47,8 +42,7 @@ def _process_val_all(cate_models, base_dir, metrics):
 
     return df
 
-def _process_mse_all(df_main, cate_models, base_dir, mode, metrics):
-    mse_list = []
+def _process_mse_all(cate_models, base_dir, metrics):
     df_all = None
     for cm in cate_models:
         mm = cm.split('_')[0]
@@ -80,18 +74,15 @@ def _process_mse_all(df_main, cate_models, base_dir, mode, metrics):
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
         df_all = pd.concat([df_all, df_base], ignore_index=True)
 
-    mse_i = ut.fn_by_best(df_all, 'mse_target', metrics_target, mode, True)
-    mse_list.append(['all'] + mse_i)
-    
-    df_mse = pd.DataFrame(mse_list, columns=['name'] + [f'{metric}_mse' for metric in metrics])
+    mse_i = [ut.get_best_metric_by_iter(df_all, 'mse_target', metric, True) for metric in metrics_target]
 
-    if df_main is None:
-        return df_mse
-    else:
-        return df_main.merge(df_mse, on=['name'])
+    df = pd.DataFrame(mse_i, columns=metrics)
+    df['name_s'] = 'MSE'
+    df['name_l'] = 'MSE'
+
+    return df
     
-def _process_policy_all(df_main, cate_models, base_dir, mode, metrics):
-    pol_list = []
+def _process_policy_all(cate_models, base_dir, metrics):
     df_all = None
     for cm in cate_models:
         try:
@@ -112,15 +103,12 @@ def _process_policy_all(df_main, cate_models, base_dir, mode, metrics):
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
         df_all = pd.concat([df_all, df_base], ignore_index=True)
 
-    pol_i = ut.fn_by_best(df_all, 'pol_target', metrics_target, mode, True)
-    pol_list.append(['all'] + pol_i)
-    
-    df_pol = pd.DataFrame(pol_list, columns=['name'] + [f'{metric}_pol' for metric in metrics])
+    pol_i = [ut.get_best_metric_by_iter(df_all, 'pol_target', metric, True) for metric in metrics_target]
+    df_pol = pd.DataFrame(pol_i, columns=metrics)
 
-    return df_main.merge(df_pol, on=['name'])
+    return df_pol
 
-def _process_r2scores_all(df_main, cate_models, base_dir, mode, metrics):
-    r2_list = []
+def _process_r2scores_all(cate_models, base_dir, metrics):
     df_all = None
     for cm in cate_models:
         mm = cm.split('_')[0]
@@ -151,17 +139,14 @@ def _process_r2scores_all(df_main, cate_models, base_dir, mode, metrics):
         df_base = df_base_val_gr.merge(df_base_test, on=['iter_id', 'param_id'], suffixes=['_val', '_test'])
         df_all = pd.concat([df_all, df_base], ignore_index=True)
 
-    r2_i = ut.fn_by_best(df_all, 'r2_score_target', metrics_target, mode, False)
-    r2_list.append(['all'] + r2_i)
-    
-    df_r2 = pd.DataFrame(r2_list, columns=['name'] + [f'{metric}_r2' for metric in metrics])
-    return df_main.merge(df_r2, on=['name'])
+    r2_i = [ut.get_best_metric_by_iter(df_all, 'r2_score_target', metric, False) for metric in metrics_target]
+    df_r2 = pd.DataFrame(r2_i, columns=metrics)
 
-def _process_plugins_all(df_main, plugin_models, cate_models, base_dir, plugin_dir, mode, metrics):
-    df_copy = df_main.copy()
+    return df_r2
+
+def _process_plugins_all(plugin_models, cate_models, base_dir, plugin_dir, metrics):
+    df_main = None
     for pm in plugin_models:
-        plugin_ate_list = []
-        plugin_pehe_list = []
         df_all = None
         for cm in cate_models:
             try:
@@ -185,24 +170,24 @@ def _process_plugins_all(df_main, plugin_models, cate_models, base_dir, plugin_d
             
         metrics_target = [f'{metric}_test_target' for metric in metrics]
             
-        plugin_ate_i = ut.fn_by_best(df_all, 'ate_val_target', metrics_target, mode, True)
-        plugin_pehe_i = ut.fn_by_best(df_all, 'pehe_val_target', metrics_target, mode, True)
+        plugin_ate_i = [ut.get_best_metric_by_iter(df_all, 'ate_val_target', metric, True) for metric in metrics_target]
+        plugin_pehe_i = [ut.get_best_metric_by_iter(df_all, 'pehe_val_target', metric, True) for metric in metrics_target]
 
-        plugin_ate_list.append(['all'] + plugin_ate_i)
-        plugin_pehe_list.append(['all'] + plugin_pehe_i)
-        
-        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_{pm}_ate' for metric in metrics])
-        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_{pm}_pehe' for metric in metrics])
-        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
-        df_copy = df_copy.merge(df_plugin, on=['name'])
+        df_ate = pd.DataFrame(plugin_ate_i, columns=metrics)
+        df_ate['name_s'] = 'plugin_ate'
+        df_ate['name_l'] = f'plugin_ate_{pm}'
+
+        df_pehe = pd.DataFrame(plugin_pehe_i, columns=metrics)
+        df_pehe['name_s'] = 'plugin_pehe'
+        df_pehe['name_l'] = f'plugin_pehe_{pm}'
+
+        df_main = pd.concat([df_main, df_ate, df_pehe], axis=0)
     
-    return df_copy
+    return df_main
 
-def _process_matching_all(df_main, ks, cate_models, base_dir, matching_dir, mode, metrics):
-    df_copy = df_main.copy()
+def _process_matching_all(ks, cate_models, base_dir, matching_dir, metrics):
+    df_main = None
     for k in ks:
-        plugin_ate_list = []
-        plugin_pehe_list = []
         df_all = None
         for cm in cate_models:
             try:
@@ -225,25 +210,26 @@ def _process_matching_all(df_main, ks, cate_models, base_dir, matching_dir, mode
             df_all = pd.concat([df_all, df_plugin], ignore_index=True)
             
         metrics_target = [f'{metric}_test_target' for metric in metrics]
-            
-        plugin_ate_i = ut.fn_by_best(df_all, 'ate_val_target', metrics_target, mode, True)
-        plugin_pehe_i = ut.fn_by_best(df_all, 'pehe_val_target', metrics_target, mode, True)
 
-        plugin_ate_list.append(['all'] + plugin_ate_i)
-        plugin_pehe_list.append(['all'] + plugin_pehe_i)
-        
-        df_plugin_ate = pd.DataFrame(plugin_ate_list, columns=['name'] + [f'{metric}_match_{k}k_ate' for metric in metrics])
-        df_plugin_pehe = pd.DataFrame(plugin_pehe_list, columns=['name'] + [f'{metric}_match_{k}k_pehe' for metric in metrics])
-        df_plugin = df_plugin_ate.merge(df_plugin_pehe, on=['name'])
-        df_copy = df_copy.merge(df_plugin, on=['name'])
+        plugin_ate_i = [ut.get_best_metric_by_iter(df_all, 'ate_val_target', metric, True) for metric in metrics_target]
+        plugin_pehe_i = [ut.get_best_metric_by_iter(df_all, 'pehe_val_target', metric, True) for metric in metrics_target]
+
+        df_ate = pd.DataFrame(plugin_ate_i, columns=metrics)
+        df_ate['name_s'] = 'matching_ate'
+        df_ate['name_l'] = f'matching_ate_{k}'
+
+        df_pehe = pd.DataFrame(plugin_pehe_i, columns=metrics)
+        df_pehe['name_s'] = 'plugin_pehe'
+        df_pehe['name_l'] = f'plugin_pehe_{k}'
+
+        df_main = pd.concat([df_main, df_ate, df_pehe], axis=0)
     
-    return df_copy
+    return df_main
 
-def _process_rscores_all(df_main, rscore_base_models, cate_models, base_dir, rscore_dir, mode, metrics):
-    df_copy = df_main.copy()
+def _process_rscores_all(rscore_base_models, cate_models, base_dir, rscore_dir, metrics):
+    df_main = None
     for rs_bm in rscore_base_models:
         rs_name = f'rs_{rs_bm}'
-        scores_list = []
         df_all = None
         for cm in cate_models:
             try:
@@ -258,10 +244,12 @@ def _process_rscores_all(df_main, rscore_base_models, cate_models, base_dir, rsc
             df_rscore_test = df_rscore_val_gr.merge(df_base_test, on=['iter_id', 'param_id'])
             df_all = pd.concat([df_all, df_rscore_test], ignore_index=True)
             
-        rscore_i = ut.fn_by_best(df_all, 'rscore', metrics, mode, False)
-        scores_list.append(['all'] + rscore_i)
+        rscore_i = [ut.get_best_metric_by_iter(df_all, 'rscore', metric, False) for metric in metrics]
         
-        df_rscore = pd.DataFrame(scores_list, columns=['name'] + [f'{metric}_{rs_name}' for metric in metrics])
-        df_copy = df_copy.merge(df_rscore, on=['name'])
-    
-    return df_copy
+        df_rscore = pd.DataFrame(rscore_i, columns=metrics)
+        df_rscore['name_s'] = 'rscore'
+        df_rscore['name_l'] = f'rscore_{rs_bm}'
+
+        df_main = pd.concat([df_main, df_rscore], axis=0)
+        
+    return df_main

@@ -6,35 +6,25 @@ This code accompanies the paper:
 
 D. Machlanski, S. Samothrakis, and P. Clarke, ‘Hyperparameter Tuning and Model Evaluation in Causal Effect Estimation’. arXiv, Mar. 02, 2023. doi: 10.48550/arXiv.2303.01412. [link](https://arxiv.org/abs/2303.01412).
 
-## Data and Results
-All datasets and results (in progress) are available [here](https://essexuniversity.box.com/s/xi6ptui0162dlcaokg8vv0274napxcsi).
+## Data
+All datasets are available [here](https://doi.org/10.6084/m9.figshare.30244936.v1).
 
 ## Replicating the paper
 Follow the steps below.
 
-1. Download datasets from [here](https://essexuniversity.box.com/s/xi6ptui0162dlcaokg8vv0274napxcsi) and put them under 'datasets' folder.
+1. Download datasets from [here](https://doi.org/10.6084/m9.figshare.30244936.v1) and put them under 'datasets' folder.
 2. Prepare Python environment.
     1. Install [miniconda](https://docs.conda.io/en/latest/miniconda.html).
     2. If you intend to run Neural Networks, run `conda env create -f environment_tf.yml`.
     3. Otherwise, you can use the default environment `conda env create -f environment.yml`.
 3. Go to 'scripts' folder and run `bash paper.sh`. This will run ALL the experiments.
 4. Go to 'analysis' folder.
-5. If you want the results in the form of latex tables:
-    1. Go to `utils.py` and set `RESULTS = 'latex'`.
-    2. Run `python compare_save_latex.py`.
-    3. Now you can use: `metrics_meta_latex.ipynb`, `correlations_meta_latex.ipynb` and `test_correlations.ipynb`.
-6. If you want the results visualised with plots:
-    1. Use: `plot_estimators.ipynb`, `plot_hyperparams.ipynb`.
-    2. In order to use `plot_metrics.ipynb`, you have to perform some extra steps.
-    3. Go to `utils.py` and set `RESULTS = 'mean'`.
-    4. Run `python compare_save_mean.py`.
-    5. Now you can use `plot_metrics.ipynb`.
+5. Run `python compare_save_prob.py` and `python compare_save_hyper_prob.py` to post-process the results.
+6. Use `plot_hyperparams_prob.ipynb` and `plot_metrics_prob.ipynb` to replicate Figures 2-4 from the paper.
 
 Note that running all experiments (step 3.) may take a LONG time (weeks, likely months). Highly parallelised computing environments are recommended.
 
-It is possible to skip step 3. by downloading our results from [here](https://essexuniversity.box.com/s/xi6ptui0162dlcaokg8vv0274napxcsi).
-
-It is also possible to skip scripts `compare_save_xxx.py` as the most important CSV files obtained as part of the paper are included in this repository.
+It is possible to replicate the plots without re-running the experiments as the most important CSV files obtained as part of the paper are included in this repository (analysis/tables).
 
 ## Project organisation
 The following description explains only the most important files and directories necessary to replicate the paper.
@@ -46,12 +36,8 @@ The following description explains only the most important files and directories
     │   ├── compare_save_xxx.py             <- Post-processes 'results' into CSV files.
     │   ├── tables                          <- CSVs from above are stored here.
     │   ├── utils.py                        <- Important functions used by `compare_save.py'.
-    │   ├── plot_estimators.ipynb           <- Visualise performance of CATE estimators.
-    │   ├── plot_hyperparams.ipynb          <- Visualise performance against types of hyperparameters.
-    │   ├── plot_metrics.ipynb              <- Visualise performance of metrics.
-    │   ├── test_correlations.ipynb         <- Compute correlations between test metrics (e.g., ATE and PEHE).
-    │   ├── correlations_meta_latex.ipynb   <- Compute correlations between validation and test metrics (e.g, MSE and PEHE).
-    │   └── metrics_meta_latex.ipynb        <- Compute all metrics (latex format).
+    │   ├── plot_hyperparams_prob.ipynb     <- Replicate Figure 2 and 3.
+    │   └── plot_metrics_prob.ipynb         <- Replicate Figure 4.
     │
     ├── datasets                            <- All four datasets go here (IHDP, Jobs, Twins and News).
     │
